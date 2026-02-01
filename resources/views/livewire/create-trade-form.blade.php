@@ -48,35 +48,53 @@
 
               {{-- Campo Money Adjustment --}}
                 <div class="mt-6">
-                    <label for="money" class="block text-sm font-medium text-gray-700 mb-2">
-                        💰 Aggiustamento Monetario (opzionale)
+                    <label class="block text-sm font-medium text-gray-700 mb-3">
+                        Crediti da aggiungere allo scambio (opzionale)
                     </label>
-                    <div class="relative">
-                        <input type="number" 
-                               id="money" 
-                               wire:model="moneyAdjustment" 
-                               placeholder="0"
-                               class="block w-full pl-3 pr-20 py-2 border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
-                        <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
-                            <span class="text-gray-500 sm:text-sm">Fantamilioni</span>
+
+                    <div class="grid grid-cols-2 gap-4">
+                        {{-- Offri crediti --}}
+                        <div class="p-4 border-2 border-red-200 rounded-lg bg-red-50">
+                            <label for="money_offer" class="block text-sm font-semibold text-red-700 mb-2">
+                                Tu OFFRI crediti
+                            </label>
+                            <div class="relative">
+                                <input type="number"
+                                       id="money_offer"
+                                       wire:model.live="moneyOffer"
+                                       placeholder="0"
+                                       min="0"
+                                       class="block w-full pl-3 pr-12 py-2 border-red-300 rounded-md focus:ring-red-500 focus:border-red-500 sm:text-sm">
+                                <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                                    <span class="text-red-500 sm:text-sm">M</span>
+                                </div>
+                            </div>
+                            <p class="mt-1 text-xs text-red-600">Crediti che DAI tu all'altra squadra</p>
+                        </div>
+
+                        {{-- Chiedi crediti --}}
+                        <div class="p-4 border-2 border-green-200 rounded-lg bg-green-50">
+                            <label for="money_request" class="block text-sm font-semibold text-green-700 mb-2">
+                                Tu CHIEDI crediti
+                            </label>
+                            <div class="relative">
+                                <input type="number"
+                                       id="money_request"
+                                       wire:model.live="moneyRequest"
+                                       placeholder="0"
+                                       min="0"
+                                       class="block w-full pl-3 pr-12 py-2 border-green-300 rounded-md focus:ring-green-500 focus:border-green-500 sm:text-sm">
+                                <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                                    <span class="text-green-500 sm:text-sm">M</span>
+                                </div>
+                            </div>
+                            <p class="mt-1 text-xs text-green-600">Crediti che RICEVI dall'altra squadra</p>
                         </div>
                     </div>
-                    <p class="mt-2 text-sm text-gray-600">
-                        <strong>Come funziona:</strong>
+
+                    <p class="mt-3 text-xs text-gray-500 text-center">
+                        Compila solo uno dei due campi, oppure lascia entrambi vuoti per uno scambio senza crediti.
                     </p>
-                    <ul class="mt-1 text-xs text-gray-500 list-disc list-inside space-y-1">
-                        <li><strong>Valore positivo</strong> (es. +50): Tu RICEVI 50M dall'altra squadra</li>
-                        <li><strong>Valore negativo</strong> (es. -30): Tu DAI 30M all'altra squadra</li>
-                        <li><strong>Zero o vuoto</strong>: Nessun scambio di denaro</li>
-                    </ul>
-                    <div class="mt-3 p-3 bg-blue-50 rounded-md border border-blue-200">
-                        <p class="text-xs text-blue-800">
-                            💡 <strong>Esempi:</strong><br>
-                            • Vuoi un corridore più forte? Offri denaro (valore negativo)<br>
-                            • Cedi un corridore forte? Chiedi denaro (valore positivo)<br>
-                            • Puoi anche fare uno scambio SOLO di denaro (senza corridori)
-                        </p>
-                    </div>
                 </div>
 
                 {{-- Bottone Invia --}}

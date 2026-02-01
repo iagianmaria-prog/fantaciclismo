@@ -18,7 +18,8 @@ class CreateTradeForm extends Component
 
     public array $offeredRiderIds = [];
     public array $requestedRiderIds = [];
-    public int $moneyAdjustment = 0;
+    public ?int $moneyOffer = null;    // Crediti che TU OFFRI (paghi)
+    public ?int $moneyRequest = null;  // Crediti che TU CHIEDI (ricevi)
 
     public function mount()
     {
@@ -39,11 +40,26 @@ class CreateTradeForm extends Component
 
     public function submitTrade()
     {
+        // Calcola money_adjustment dai due campi separati
+        // moneyOffer (tu paghi) -> valore negativo
+        // moneyRequest (tu ricevi) -> valore positivo
+        $moneyOffer = $this->moneyOffer ?? 0;
+        $moneyRequest = $this->moneyRequest ?? 0;
+
+        // Non puoi compilare entrambi
+        if ($moneyOffer > 0 && $moneyRequest > 0) {
+            session()->flash('error', 'Non puoi sia offrire che chiedere crediti. Compila solo uno dei due campi.');
+            return;
+        }
+
+        // Calcola il valore da salvare
+        $moneyAdjustment = $moneyRequest - $moneyOffer;
+
         // Validazione: deve esserci ALMENO una delle tre cose
-        if (empty($this->offeredRiderIds) && 
-            empty($this->requestedRiderIds) && 
-            $this->moneyAdjustment == 0) {
-            session()->flash('error', 'Devi selezionare almeno un corridore da offrire/richiedere oppure specificare un aggiustamento monetario.');
+        if (empty($this->offeredRiderIds) &&
+            empty($this->requestedRiderIds) &&
+            $moneyAdjustment == 0) {
+            session()->flash('error', 'Devi selezionare almeno un corridore da offrire/richiedere oppure specificare crediti.');
             return;
         }
 
@@ -53,21 +69,20 @@ class CreateTradeForm extends Component
         }
 
         // Validazione: verifica che l'utente abbia abbastanza budget se deve pagare
-        if ($this->moneyAdjustment < 0) {
+        if ($moneyOffer > 0) {
             $myTeam = Auth::user()->playerTeam;
-            $amountToPay = abs($this->moneyAdjustment);
-            
-            if ($myTeam->balance < $amountToPay) {
-                session()->flash('error', "Non hai abbastanza budget! Il tuo saldo è {$myTeam->balance}M, ma devi pagare {$amountToPay}M.");
+
+            if ($myTeam->balance < $moneyOffer) {
+                session()->flash('error', "Non hai abbastanza budget! Il tuo saldo è {$myTeam->balance}M, ma vuoi offrire {$moneyOffer}M.");
                 return;
             }
         }
 
-        DB::transaction(function () {
+        DB::transaction(function () use ($moneyAdjustment) {
             $trade = Trade::create([
                 'offering_team_id' => Auth::user()->playerTeam->id,
                 'receiving_team_id' => $this->selectedTeamId,
-                'money_adjustment' => $this->moneyAdjustment,
+                'money_adjustment' => $moneyAdjustment,
                 'status' => 'pending',
             ]);
 
@@ -81,12 +96,12 @@ class CreateTradeForm extends Component
         });
 
         session()->flash('status', 'Proposta di scambio inviata con successo!');
-        
+
         // Reset del form
-        $this->reset(['offeredRiderIds', 'requestedRiderIds', 'moneyAdjustment']);
+        $this->reset(['offeredRiderIds', 'requestedRiderIds', 'moneyOffer', 'moneyRequest']);
         $this->selectedTeamId = null;
         $this->selectedTeamRoster = null;
-        
+
         $this->dispatch('trade-proposed');
     }
 
