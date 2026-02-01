@@ -211,13 +211,25 @@ class PlayerTeamController extends Controller
             }
 
             if ($trade->money_adjustment != 0) {
+                // money_adjustment > 0: chi propone RICEVE, chi accetta PAGA
+                // money_adjustment < 0: chi propone PAGA, chi accetta RICEVE
+
+                if ($trade->money_adjustment > 0) {
+                    // Chi accetta deve pagare - verifico che abbia budget sufficiente
+                    if ($receivingTeam->balance < $trade->money_adjustment) {
+                        throw new Exception('Budget insufficiente per completare lo scambio. Devi pagare ' . $trade->money_adjustment . 'M ma hai solo ' . $receivingTeam->balance . 'M.');
+                    }
+                } else {
+                    // Chi propone deve pagare - verifico che abbia budget sufficiente
+                    $amountToPay = abs($trade->money_adjustment);
+                    if ($offeringTeam->balance < $amountToPay) {
+                        throw new Exception('La squadra proponente non ha più budget sufficiente per completare lo scambio.');
+                    }
+                }
+
                 $offeringTeam->balance += $trade->money_adjustment;
                 $receivingTeam->balance -= $trade->money_adjustment;
-                
-                if ($receivingTeam->balance < 0) {
-                    throw new Exception('Budget insufficiente per completare lo scambio.');
-                }
-                
+
                 $offeringTeam->save();
                 $receivingTeam->save();
             }
@@ -387,97 +399,4 @@ class PlayerTeamController extends Controller
         ]);
     }
 
-    /**
-     * Mostra il form per creare un counter-offer
-     */
-    public function showCounterOfferForm(Trade $trade)
-    {
-        $myTeam = Auth::user()->playerTeam;
-        
-        if ($trade->receiving_team_id != $myTeam->id) {
-            return redirect()->route('market.show')->with('error', 'Non puoi fare una controfferta per questo scambio.');
-        }
-        
-        if ($trade->status !== 'pending') {
-            return redirect()->route('market.show')->with('error', 'Questo scambio non è più disponibile.');
-        }
-        
-        $offeredRiders = $trade->riders()->wherePivot('direction', 'offering')->get();
-        $requestedRiders = $trade->riders()->wherePivot('direction', 'receiving')->get();
-        $myRoster = $myTeam->riders()->with('category')->get();
-        $theirRoster = $trade->offeringTeam->riders()->with('category')->get();
-        
-        return view('market.counter-offer', [
-            'originalTrade' => $trade,
-            'offeredRiders' => $offeredRiders,
-            'requestedRiders' => $requestedRiders,
-            'myRoster' => $myRoster,
-            'theirRoster' => $theirRoster,
-            'myTeam' => $myTeam,
-            'theirTeam' => $trade->offeringTeam,
-        ]);
-    }
-
-    /**
-     * Salva il counter-offer
-     */
-    public function submitCounterOffer(Request $request, Trade $originalTrade)
-    {
-        $myTeam = Auth::user()->playerTeam;
-        
-        if ($originalTrade->receiving_team_id != $myTeam->id) {
-            return back()->with('error', 'Non puoi fare una controfferta per questo scambio.');
-        }
-        
-        if ($originalTrade->status !== 'pending') {
-            return back()->with('error', 'Questo scambio non è più disponibile.');
-        }
-        
-        $request->validate([
-            'offered_riders' => 'nullable|array',
-            'offered_riders.*' => 'exists:riders,id',
-            'requested_riders' => 'nullable|array',
-            'requested_riders.*' => 'exists:riders,id',
-            'money_adjustment' => 'nullable|integer',
-        ]);
-        
-        if (empty($request->offered_riders) && 
-            empty($request->requested_riders) && 
-            ($request->money_adjustment == 0 || $request->money_adjustment === null)) {
-            return back()->with('error', 'Devi selezionare almeno un corridore o specificare crediti.');
-        }
-        
-        DB::beginTransaction();
-        try {
-            $originalTrade->status = 'rejected';
-            $originalTrade->save();
-            
-            $counterOffer = Trade::create([
-                'offering_team_id' => $myTeam->id,
-                'receiving_team_id' => $originalTrade->offering_team_id,
-                'money_adjustment' => $request->money_adjustment ?? 0,
-                'status' => 'pending',
-                'parent_trade_id' => $originalTrade->id,
-            ]);
-            
-            if (!empty($request->offered_riders)) {
-                foreach ($request->offered_riders as $riderId) {
-                    $counterOffer->riders()->attach($riderId, ['direction' => 'offering']);
-                }
-            }
-            
-            if (!empty($request->requested_riders)) {
-                foreach ($request->requested_riders as $riderId) {
-                    $counterOffer->riders()->attach($riderId, ['direction' => 'receiving']);
-                }
-            }
-            
-            DB::commit();
-            return redirect()->route('market.show')->with('status', 'Controfferta inviata con successo!');
-            
-        } catch (Exception $e) {
-            DB::rollBack();
-            return back()->with('error', 'Errore: ' . $e->getMessage());
-        }
-    }
 }

@@ -84,36 +84,31 @@
                             @if($trade->money_adjustment != 0)
                                 <div class="mb-4 p-3 bg-blue-50 rounded-md">
                                     <p class="text-sm font-medium text-blue-900">
-                                        💰 Aggiustamento monetario: 
+                                        💰 Aggiustamento monetario:
                                         @if($trade->money_adjustment > 0)
-                                            <span class="text-green-600">+{{ $trade->money_adjustment }}M</span> per te
+                                            <span class="text-red-600">Tu paghi {{ $trade->money_adjustment }}M</span>
                                         @else
-                                            <span class="text-red-600">{{ $trade->money_adjustment }}M</span> da te
+                                            <span class="text-green-600">Tu ricevi {{ abs($trade->money_adjustment) }}M</span>
                                         @endif
                                     </p>
                                 </div>
                             @endif
 
                             {{-- Bottoni Azione --}}
-<div class="grid grid-cols-3 gap-3">
+<div class="grid grid-cols-2 gap-3">
     <form method="POST" action="{{ route('market.accept', $trade) }}">
         @csrf
-        <button type="submit" 
+        <button type="submit"
                 class="w-full px-4 py-2 bg-green-600 text-white text-sm font-semibold rounded-lg hover:bg-green-700 transition duration-150">
-            ✅ Accetta
+            Accetta
         </button>
     </form>
-    
-    <a href="{{ route('market.counter-offer', $trade) }}" 
-       class="px-4 py-2 bg-blue-600 text-white text-sm font-semibold rounded-lg hover:bg-blue-700 transition duration-150 text-center flex items-center justify-center">
-        🔄 Controfferta
-    </a>
-    
+
     <form method="POST" action="{{ route('market.reject', $trade) }}">
         @csrf
-        <button type="submit" 
+        <button type="submit"
                 class="w-full px-4 py-2 bg-red-600 text-white text-sm font-semibold rounded-lg hover:bg-red-700 transition duration-150">
-            ❌ Rifiuta
+            Rifiuta
         </button>
     </form>
 </div>
@@ -193,11 +188,11 @@
                             @if($trade->money_adjustment != 0)
                                 <div class="mb-4 p-3 bg-blue-50 rounded-md">
                                     <p class="text-sm font-medium text-blue-900">
-                                        💰 Aggiustamento monetario: 
+                                        💰 Aggiustamento monetario:
                                         @if($trade->money_adjustment > 0)
-                                            <span class="text-green-600">+{{ $trade->money_adjustment }}M</span> per te
+                                            <span class="text-green-600">Tu ricevi {{ $trade->money_adjustment }}M</span>
                                         @else
-                                            <span class="text-red-600">{{ abs($trade->money_adjustment) }}M</span> per loro
+                                            <span class="text-red-600">Tu paghi {{ abs($trade->money_adjustment) }}M</span>
                                         @endif
                                     </p>
                                 </div>

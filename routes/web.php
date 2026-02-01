@@ -62,14 +62,6 @@ Route::post('/market/cancel/{trade}', [PlayerTeamController::class, 'cancelTrade
         ->name('statistics.show')
         ->middleware('has.team');
     
-    // Rotta per counter-offer
-    Route::get('/market/counter-offer/{trade}', [PlayerTeamController::class, 'showCounterOfferForm'])
-        ->name('market.counter-offer')
-        ->middleware('has.team');
-    
-    Route::post('/market/counter-offer/{trade}', [PlayerTeamController::class, 'submitCounterOffer'])
-        ->name('market.counter-offer.submit')
-        ->middleware('has.team');
 });
 
 require __DIR__.'/auth.php';
