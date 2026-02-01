@@ -75,20 +75,18 @@
                 
                 <form method="POST" action="{{ route('market.counter-offer.submit', $originalTrade) }}">
                     @csrf
-                    <form method="POST" action="{{ route('market.counter-offer.submit', $originalTrade) }}">
-    @csrf
-    
-    {{-- DEBUG: Mostra errori validazione --}}
-    @if ($errors->any())
-        <div class="p-4 mb-4 text-sm text-red-700 bg-red-100 rounded-lg" role="alert">
-            <strong>Errori di validazione:</strong>
-            <ul class="mt-2 list-disc list-inside">
-                @foreach ($errors->all() as $error)
-                    <li>{{ $error }}</li>
-                @endforeach
-            </ul>
-        </div>
-    @endif
+
+                    @if ($errors->any())
+                        <div class="p-4 mb-4 text-sm text-red-700 bg-red-100 rounded-lg" role="alert">
+                            <strong>Errori di validazione:</strong>
+                            <ul class="mt-2 list-disc list-inside">
+                                @foreach ($errors->all() as $error)
+                                    <li>{{ $error }}</li>
+                                @endforeach
+                            </ul>
+                        </div>
+                    @endif
+
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                         {{-- Il TUO Roster --}}
                         <div>
