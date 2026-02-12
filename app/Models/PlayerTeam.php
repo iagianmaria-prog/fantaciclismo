@@ -31,4 +31,28 @@ class PlayerTeam extends Model
     {
         return $this->hasMany(Trade::class, 'receiving_team_id');
     }
+
+    public function raceLineups(): HasMany
+    {
+        return $this->hasMany(RaceLineup::class);
+    }
+
+    // Calcola i crediti totali guadagnati dalle gare
+    public function getTotalRaceCredits(): int
+    {
+        $totalCredits = 0;
+
+        foreach ($this->raceLineups as $lineup) {
+            $totalCredits += $lineup->calculateCreditsEarned();
+        }
+
+        return $totalCredits;
+    }
+
+    // Aggiungi crediti al budget
+    public function addCredits(int $amount): void
+    {
+        $this->balance += $amount;
+        $this->save();
+    }
 }

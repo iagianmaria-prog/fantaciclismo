@@ -21,6 +21,9 @@
                     <x-nav-link :href="route('market.show')" :active="request()->routeIs('market.show')">
                         {{ __('Mercato') }}
                     </x-nav-link>
+                    <x-nav-link :href="route('races.index')" :active="request()->routeIs('races.*')">
+                        {{ __('Gare') }}
+                    </x-nav-link>
 <x-nav-link :href="route('statistics.show')" :active="request()->routeIs('statistics.show')">
     📊 {{ __('Statistiche') }}
 </x-nav-link>
@@ -101,6 +104,9 @@
             </x-responsive-nav-link>
             <x-responsive-nav-link :href="route('market.show')" :active="request()->routeIs('market.show')">
                 {{ __('Mercato') }}
+            </x-responsive-nav-link>
+            <x-responsive-nav-link :href="route('races.index')" :active="request()->routeIs('races.*')">
+                {{ __('Gare') }}
             </x-responsive-nav-link>
         </div>
 

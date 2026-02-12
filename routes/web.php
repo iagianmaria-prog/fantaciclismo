@@ -2,6 +2,7 @@
 use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\PlayerTeamController;
+use App\Http\Controllers\RaceController;
 use Illuminate\Support\Facades\Auth;
 
 /*
@@ -61,7 +62,16 @@ Route::post('/market/cancel/{trade}', [PlayerTeamController::class, 'cancelTrade
     Route::get('/statistics', [PlayerTeamController::class, 'showStatistics'])
         ->name('statistics.show')
         ->middleware('has.team');
-    
+
+    // Rotte per le gare
+    Route::middleware('has.team')->group(function () {
+        Route::get('/races', [RaceController::class, 'index'])->name('races.index');
+        Route::get('/races/{race}', [RaceController::class, 'show'])->name('races.show');
+        Route::get('/races/{race}/lineup', [RaceController::class, 'lineup'])->name('races.lineup');
+        Route::post('/races/{race}/lineup', [RaceController::class, 'saveLineup'])->name('races.lineup.save');
+        Route::get('/races/{race}/standings', [RaceController::class, 'standings'])->name('races.standings');
+    });
+
 });
 
 require __DIR__.'/auth.php';
