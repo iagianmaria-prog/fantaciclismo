@@ -72,6 +72,12 @@ Route::post('/market/cancel/{trade}', [PlayerTeamController::class, 'cancelTrade
         Route::get('/races/{race}/standings', [RaceController::class, 'standings'])->name('races.standings');
     });
 
+    // Rotte per la classifica generale
+    Route::middleware('has.team')->group(function () {
+        Route::get('/leaderboard', [PlayerTeamController::class, 'showLeaderboard'])->name('leaderboard.index');
+        Route::get('/leaderboard/team/{team}', [PlayerTeamController::class, 'showTeamHistory'])->name('leaderboard.team');
+    });
+
 });
 
 require __DIR__.'/auth.php';

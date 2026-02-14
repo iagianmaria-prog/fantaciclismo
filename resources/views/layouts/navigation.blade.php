@@ -24,8 +24,11 @@
                     <x-nav-link :href="route('races.index')" :active="request()->routeIs('races.*')">
                         {{ __('Gare') }}
                     </x-nav-link>
+                    <x-nav-link :href="route('leaderboard.index')" :active="request()->routeIs('leaderboard.*')">
+                        {{ __('Classifica') }}
+                    </x-nav-link>
 <x-nav-link :href="route('statistics.show')" :active="request()->routeIs('statistics.show')">
-    📊 {{ __('Statistiche') }}
+    {{ __('Statistiche') }}
 </x-nav-link>
                     <x-nav-link :href="route('market.history')" :active="request()->routeIs('market.history')">
     📜 {{ __('Storico Scambi') }}
@@ -107,6 +110,9 @@
             </x-responsive-nav-link>
             <x-responsive-nav-link :href="route('races.index')" :active="request()->routeIs('races.*')">
                 {{ __('Gare') }}
+            </x-responsive-nav-link>
+            <x-responsive-nav-link :href="route('leaderboard.index')" :active="request()->routeIs('leaderboard.*')">
+                {{ __('Classifica') }}
             </x-responsive-nav-link>
         </div>
 

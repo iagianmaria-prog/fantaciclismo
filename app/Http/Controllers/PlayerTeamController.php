@@ -9,6 +9,9 @@ use Illuminate\Support\Facades\DB;
 use App\Models\Rider;
 use App\Services\SettingManager;
 use App\Models\Trade;
+use App\Models\Race;
+use App\Models\RaceLineup;
+use App\Models\RaceResult;
 use Exception;
 
 class PlayerTeamController extends Controller
@@ -399,4 +402,118 @@ class PlayerTeamController extends Controller
         ]);
     }
 
+    /**
+     * Mostra la classifica generale delle squadre
+     */
+    public function showLeaderboard()
+    {
+        $myTeam = Auth::user()->playerTeam;
+
+        // Recupera tutte le squadre con i crediti totali guadagnati dalle gare
+        $teams = PlayerTeam::with('user')->get()->map(function ($team) {
+            // Calcola crediti totali dalle gare
+            $totalCredits = 0;
+            $racesParticipated = 0;
+            $raceDetails = [];
+
+            $lineups = RaceLineup::where('player_team_id', $team->id)
+                ->with(['race', 'riders'])
+                ->get();
+
+            foreach ($lineups as $lineup) {
+                if ($lineup->race && $lineup->race->status === 'completed') {
+                    $racesParticipated++;
+                    $raceCredits = $lineup->calculateCreditsEarned();
+                    $totalCredits += $raceCredits;
+
+                    $raceDetails[] = [
+                        'race' => $lineup->race,
+                        'credits' => $raceCredits,
+                    ];
+                }
+            }
+
+            return [
+                'team' => $team,
+                'total_credits' => $totalCredits,
+                'races_participated' => $racesParticipated,
+                'race_details' => $raceDetails,
+                'riders_count' => $team->riders()->count(),
+            ];
+        })
+        ->sortByDesc('total_credits')
+        ->values();
+
+        // Trova la posizione della mia squadra
+        $myPosition = $teams->search(function ($item) use ($myTeam) {
+            return $item['team']->id === $myTeam->id;
+        }) + 1;
+
+        // Statistiche globali
+        $completedRaces = Race::where('status', 'completed')->count();
+        $totalCreditsDistributed = RaceResult::sum('credits_earned');
+
+        return view('leaderboard.index', [
+            'teams' => $teams,
+            'myTeam' => $myTeam,
+            'myPosition' => $myPosition,
+            'completedRaces' => $completedRaces,
+            'totalCreditsDistributed' => $totalCreditsDistributed,
+        ]);
+    }
+
+    /**
+     * Mostra lo storico crediti di una squadra
+     */
+    public function showTeamHistory(PlayerTeam $team)
+    {
+        $myTeam = Auth::user()->playerTeam;
+
+        // Recupera tutte le partecipazioni alle gare
+        $raceHistory = RaceLineup::where('player_team_id', $team->id)
+            ->with(['race', 'riders'])
+            ->get()
+            ->filter(function ($lineup) {
+                return $lineup->race && $lineup->race->status === 'completed';
+            })
+            ->map(function ($lineup) {
+                $credits = $lineup->calculateCreditsEarned();
+
+                // Dettaglio corridori con risultati
+                $riderResults = [];
+                foreach ($lineup->riders as $rider) {
+                    $result = RaceResult::where('race_id', $lineup->race_id)
+                        ->where('rider_id', $rider->id)
+                        ->first();
+
+                    if ($result) {
+                        $riderResults[] = [
+                            'rider' => $rider,
+                            'position' => $result->position,
+                            'credits' => $result->credits_earned,
+                        ];
+                    }
+                }
+
+                // Ordina per posizione
+                usort($riderResults, fn($a, $b) => $a['position'] - $b['position']);
+
+                return [
+                    'race' => $lineup->race,
+                    'total_credits' => $credits,
+                    'rider_results' => $riderResults,
+                ];
+            })
+            ->sortByDesc(fn($item) => $item['race']->date)
+            ->values();
+
+        $totalCredits = $raceHistory->sum('total_credits');
+
+        return view('leaderboard.team-history', [
+            'team' => $team,
+            'raceHistory' => $raceHistory,
+            'totalCredits' => $totalCredits,
+            'myTeam' => $myTeam,
+        ]);
+    }
 }
