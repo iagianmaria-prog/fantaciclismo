@@ -110,6 +110,14 @@
                                        class="mt-4 inline-block px-4 py-2 bg-indigo-600 text-white text-sm rounded-lg hover:bg-indigo-700">
                                         Schiera Formazione
                                     </a>
+                                @elseif($race->status === 'upcoming')
+                                    <p class="text-xs text-gray-500 mt-2">
+                                        Le formazioni non sono ancora aperte. Attendi che l'admin apra le formazioni.
+                                    </p>
+                                @elseif($race->status === 'completed' || $race->status === 'in_progress')
+                                    <p class="text-xs text-gray-500 mt-2">
+                                        Le formazioni per questa gara sono chiuse.
+                                    </p>
                                 @endif
                             </div>
                         @endif

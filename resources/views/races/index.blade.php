@@ -59,7 +59,7 @@
                             </div>
                         </div>
 
-                        <div class="mt-4 flex gap-2">
+                        <div class="mt-4 flex gap-2 items-center">
                             <a href="{{ route('races.show', $race) }}"
                                class="px-4 py-2 bg-gray-600 text-white text-sm rounded-lg hover:bg-gray-700">
                                 Dettagli
@@ -69,6 +69,8 @@
                                    class="px-4 py-2 bg-indigo-600 text-white text-sm rounded-lg hover:bg-indigo-700">
                                     {{ $myLineup ? 'Modifica Formazione' : 'Schiera Formazione' }}
                                 </a>
+                            @elseif($race->status === 'upcoming')
+                                <span class="text-xs text-gray-500">Formazioni non ancora aperte</span>
                             @endif
                         </div>
                     </div>

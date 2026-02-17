@@ -51,8 +51,11 @@
 
                     <div class="mb-4 p-3 bg-blue-50 rounded-lg">
                         <p class="text-sm text-blue-800">
-                            Seleziona <strong>{{ $maxRiders }} corridori</strong> dal tuo roster.
+                            Seleziona <strong>da 1 a {{ $maxRiders }} corridori</strong> dal tuo roster.
                             <span id="selectedCount" class="font-bold">{{ count($selectedRiderIds) }}</span>/{{ $maxRiders }} selezionati.
+                        </p>
+                        <p class="text-xs text-blue-600 mt-1">
+                            Puoi schierare una formazione incompleta (minimo 1 corridore).
                         </p>
                     </div>
 
