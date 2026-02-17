@@ -42,10 +42,16 @@
                                 @endif
                             </div>
                             <div class="text-right">
-                                <span class="px-3 py-1 text-xs font-semibold rounded-full
-                                    {{ $race->status === 'lineup_open' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800' }}">
-                                    {{ $race->status_label }}
-                                </span>
+                                @if($race->status === 'lineup_open' && $race->isDeadlineExpired())
+                                    <span class="px-3 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-800">
+                                        Deadline scaduta
+                                    </span>
+                                @else
+                                    <span class="px-3 py-1 text-xs font-semibold rounded-full
+                                        {{ $race->status === 'lineup_open' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800' }}">
+                                        {{ $race->status_label }}
+                                    </span>
+                                @endif
 
                                 @php
                                     $myLineup = $race->getLineupForTeam($team);
@@ -69,6 +75,8 @@
                                    class="px-4 py-2 bg-indigo-600 text-white text-sm rounded-lg hover:bg-indigo-700">
                                     {{ $myLineup ? 'Modifica Formazione' : 'Schiera Formazione' }}
                                 </a>
+                            @elseif($race->status === 'lineup_open' && $race->isDeadlineExpired())
+                                <span class="text-xs text-red-600">Deadline scaduta - contatta l'admin</span>
                             @elseif($race->status === 'upcoming')
                                 <span class="text-xs text-gray-500">Formazioni non ancora aperte</span>
                             @endif

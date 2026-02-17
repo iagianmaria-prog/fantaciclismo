@@ -46,19 +46,30 @@
                             <div class="flex justify-between">
                                 <dt class="text-sm text-gray-600">Stato:</dt>
                                 <dd>
-                                    <span class="px-2 py-1 text-xs font-semibold rounded-full
-                                        {{ $race->status === 'completed' ? 'bg-gray-100 text-gray-800' : '' }}
-                                        {{ $race->status === 'lineup_open' ? 'bg-green-100 text-green-800' : '' }}
-                                        {{ $race->status === 'upcoming' ? 'bg-yellow-100 text-yellow-800' : '' }}
-                                        {{ $race->status === 'in_progress' ? 'bg-blue-100 text-blue-800' : '' }}">
-                                        {{ $race->status_label }}
-                                    </span>
+                                    @if($race->status === 'lineup_open' && $race->isDeadlineExpired())
+                                        <span class="px-2 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-800">
+                                            Deadline scaduta
+                                        </span>
+                                    @else
+                                        <span class="px-2 py-1 text-xs font-semibold rounded-full
+                                            {{ $race->status === 'completed' ? 'bg-gray-100 text-gray-800' : '' }}
+                                            {{ $race->status === 'lineup_open' ? 'bg-green-100 text-green-800' : '' }}
+                                            {{ $race->status === 'upcoming' ? 'bg-yellow-100 text-yellow-800' : '' }}
+                                            {{ $race->status === 'in_progress' ? 'bg-blue-100 text-blue-800' : '' }}">
+                                            {{ $race->status_label }}
+                                        </span>
+                                    @endif
                                 </dd>
                             </div>
                             @if($race->lineup_deadline)
                                 <div class="flex justify-between">
                                     <dt class="text-sm text-gray-600">Deadline formazione:</dt>
-                                    <dd class="text-sm font-medium">{{ $race->lineup_deadline->format('d/m/Y H:i') }}</dd>
+                                    <dd class="text-sm font-medium {{ $race->isDeadlineExpired() ? 'text-red-600' : '' }}">
+                                        {{ $race->lineup_deadline->format('d/m/Y H:i') }}
+                                        @if($race->isDeadlineExpired())
+                                            <span class="text-xs">(scaduta)</span>
+                                        @endif
+                                    </dd>
                                 </div>
                             @endif
                         </dl>
@@ -110,6 +121,11 @@
                                        class="mt-4 inline-block px-4 py-2 bg-indigo-600 text-white text-sm rounded-lg hover:bg-indigo-700">
                                         Schiera Formazione
                                     </a>
+                                @elseif($race->status === 'lineup_open' && $race->isDeadlineExpired())
+                                    <p class="text-xs text-red-600 mt-2">
+                                        La deadline per le formazioni e' scaduta ({{ $race->lineup_deadline->format('d/m/Y H:i') }}).
+                                        Contatta l'admin per estendere la deadline.
+                                    </p>
                                 @elseif($race->status === 'upcoming')
                                     <p class="text-xs text-gray-500 mt-2">
                                         Le formazioni non sono ancora aperte. Attendi che l'admin apra le formazioni.

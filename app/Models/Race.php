@@ -57,11 +57,16 @@ class Race extends Model
             return false;
         }
 
-        if ($this->lineup_deadline && Carbon::now()->gt($this->lineup_deadline)) {
+        if ($this->isDeadlineExpired()) {
             return false;
         }
 
         return true;
+    }
+
+    public function isDeadlineExpired(): bool
+    {
+        return $this->lineup_deadline && Carbon::now()->gt($this->lineup_deadline);
     }
 
     public function canSubmitLineup(): bool
