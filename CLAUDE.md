@@ -1,77 +1,77 @@
 # CLAUDE.md — Fantaciclismo
 
-This file provides essential context for AI assistants working on this codebase.
+Questo file fornisce il contesto essenziale per gli assistenti AI che lavorano su questo progetto.
 
-## Project Overview
+## Panoramica del Progetto
 
-**Fantaciclismo** is a fantasy cycling league manager — a multiplayer web application where players build virtual professional cycling teams, participate in auctions, trade cyclists, and compete based on real-world race performances.
+**Fantaciclismo** è un gestore di leghe di ciclismo fantasy — un'applicazione web multiplayer dove i giocatori costruiscono squadre ciclistiche virtuali, partecipano ad aste, scambiano corridori e competono in base alle prestazioni reali delle gare.
 
 - **Framework:** Laravel 12 (PHP 8.2+)
 - **Frontend:** Blade + Alpine.js + Tailwind CSS 3
-- **Realtime UI:** Livewire 3
-- **Admin panel:** Filament 3.2
-- **Database:** SQLite (dev) / MySQL or PostgreSQL (prod)
+- **UI reattiva:** Livewire 3
+- **Pannello admin:** Filament 3.2
+- **Database:** SQLite (sviluppo) / MySQL o PostgreSQL (produzione)
 - **Build tool:** Vite 7
 
 ---
 
-## Essential Commands
+## Comandi Essenziali
 
-### Initial Setup
+### Setup Iniziale
 ```bash
 composer run setup
 ```
-Installs PHP + Node dependencies, generates APP_KEY, runs migrations, and builds assets.
+Installa le dipendenze PHP e Node, genera l'APP_KEY, esegue le migration e compila gli asset.
 
-### Development Server
+### Server di Sviluppo
 ```bash
 composer run dev
 ```
-Starts concurrently: Laravel server (`:8000`), queue listener, Pail log viewer, and Vite watcher.
+Avvia in parallelo: server Laravel (`:8000`), queue listener, Pail log viewer e Vite watcher.
 
-### Run Tests
+### Eseguire i Test
 ```bash
 composer run test
 ```
-Clears config cache then runs PHPUnit. Tests use an in-memory SQLite database.
+Svuota la cache di configurazione e poi esegue PHPUnit. I test usano un database SQLite in memoria.
 
-### Production Build
+### Build di Produzione
 ```bash
 npm run build
 ```
 
-### Useful Artisan Commands
+### Comandi Artisan Utili
 ```bash
-php artisan migrate              # Run pending migrations
-php artisan migrate:fresh --seed # Reset DB and seed
-php artisan tinker               # REPL
-php artisan pint                 # Lint PHP code (Laravel Pint)
+php artisan migrate              # Esegue le migration in sospeso
+php artisan migrate:fresh --seed # Azzera il DB e lo risemina
+php artisan tinker               # REPL interattivo
+php artisan pint                 # Linting del codice PHP (Laravel Pint)
 ```
 
 ---
 
-## Project Structure
+## Struttura del Progetto
 
 ```
 app/
 ├── Http/
 │   ├── Controllers/
-│   │   ├── PlayerTeamController.php   # Core game logic (auctions, roster, trades)
-│   │   ├── RaceController.php         # Race management and lineups
+│   │   ├── PlayerTeamController.php   # Logica di gioco principale (aste, rosa, scambi)
+│   │   ├── RaceController.php         # Gestione gare e formazioni
 │   │   └── ProfileController.php
 │   └── Middleware/
-│       ├── EnsureUserHasTeam.php      # Redirects to team creation if team missing
-│       └── EnsureSettingsExist.php    # Bootstraps game settings on first run
-├── Models/                            # 13 Eloquent models (see section below)
+│       ├── EnsureUserHasTeam.php      # Reindirizza alla creazione squadra se mancante
+│       └── EnsureSettingsExist.php    # Inizializza le impostazioni di gioco al primo avvio
+├── Models/                            # 13 model Eloquent (vedi sezione dedicata)
 ├── Services/
-│   └── SettingManager.php             # Centralized, cached game rule config
-├── Filament/Resources/                # Admin CRUD for riders, auctions, races, settings
+│   └── SettingManager.php             # Configurazione centralizzata e cachata delle regole di gioco
+├── Filament/Resources/                # CRUD admin per corridori, aste, gare, impostazioni
 ├── Livewire/
-│   └── CreateTradeForm.php            # Interactive trade proposal component
+│   └── CreateTradeForm.php            # Componente interattivo per proporre scambi
 └── View/Components/
 
 database/
-├── migrations/    # 20 migration files
+├── migrations/    # 20 file di migration
 └── seeders/
     ├── DatabaseSeeder.php
     ├── RiderCategorySeeder.php
@@ -81,140 +81,140 @@ database/
 
 resources/views/
 ├── layouts/       # app.blade.php, guest.blade.php, navigation.blade.php
-├── auction/       # Auction interface
-├── market/        # Trade/transfer market
-├── player-team/   # Team management
-├── races/         # Race listings, lineup editor, standings
-├── statistics/    # Team stats
-├── livewire/      # Livewire component views
-└── filament/      # Admin panel overrides
+├── auction/       # Interfaccia asta
+├── market/        # Mercato degli scambi
+├── player-team/   # Gestione squadra
+├── races/         # Lista gare, editor formazione, classifiche
+├── statistics/    # Statistiche squadra
+├── livewire/      # View dei componenti Livewire
+└── filament/      # Override del pannello admin
 
 routes/
-├── web.php        # All application routes
-└── auth.php       # Breeze authentication routes
+├── web.php        # Tutte le rotte dell'applicazione
+└── auth.php       # Rotte di autenticazione (Breeze)
 ```
 
 ---
 
-## Key Models and Relationships
+## Model Principali e Relazioni
 
-| Model | Description |
+| Model | Descrizione |
 |---|---|
-| `User` | Auth user; admin check via hardcoded `admin@test.com` |
-| `PlayerTeam` | User's fantasy team (1:1 with User) |
-| `Rider` | A cyclist; belongs to `PlayerTeam` and `RiderCategory` |
-| `RiderCategory` | Cyclist role: GC, Puncher, Pavé, Velocisti, Cronomen, Gregari, Next Gen |
-| `Trade` | Trade proposal between teams; uses `rider_trade` pivot; supports counter-offers via `parent_trade_id` |
-| `Auction` | Auction event for buying riders |
-| `Race` | A cycling race event |
-| `RaceLineup` | A team's submitted rider lineup for a race |
-| `RaceResult` | Individual rider's result in a race |
-| `RaceCreditRule` | Rules for awarding credits based on results |
-| `Setting` | Key-value game configuration |
-| `Roster` | Roster snapshot / historical entry |
+| `User` | Utente autenticato; controllo admin tramite email hardcoded `admin@test.com` |
+| `PlayerTeam` | Squadra fantasy dell'utente (1:1 con User) |
+| `Rider` | Un corridore; appartiene a `PlayerTeam` e `RiderCategory` |
+| `RiderCategory` | Ruolo del corridore: GC, Puncher, Pavé, Velocisti, Cronomen, Gregari, Next Gen |
+| `Trade` | Proposta di scambio tra squadre; usa la pivot `rider_trade`; supporta contro-offerte via `parent_trade_id` |
+| `Auction` | Evento d'asta per l'acquisto di corridori |
+| `Race` | Una gara ciclistica |
+| `RaceLineup` | Formazione inviata da una squadra per una gara |
+| `RaceResult` | Risultato individuale di un corridore in una gara |
+| `RaceCreditRule` | Regole per l'assegnazione di crediti in base ai risultati |
+| `Setting` | Configurazione di gioco chiave-valore |
+| `Roster` | Snapshot storico della rosa |
 
 ---
 
-## Routes Reference
+## Riferimento Rotte
 
-All routes require `auth` middleware. Routes marked with `has.team` also require `EnsureUserHasTeam`.
+Tutte le rotte richiedono il middleware `auth`. Le rotte con `has.team` richiedono anche `EnsureUserHasTeam`.
 
-| Method | Route | Middleware | Action |
+| Metodo | Rotta | Middleware | Azione |
 |---|---|---|---|
-| GET | `/` | — | Welcome page |
-| GET | `/dashboard` | auth, verified, has.team | Team dashboard |
-| GET/POST | `/create-team` | auth | Create team |
-| GET | `/auction` | auth | Show auction |
-| POST | `/auction/buy/{rider}` | auth | Purchase rider |
-| POST | `/roster/release/{rider}` | auth | Release rider |
-| GET | `/market` | auth, has.team | Trade market |
-| POST | `/market/accept/{trade}` | auth, has.team | Accept trade |
-| POST | `/market/reject/{trade}` | auth, has.team | Reject trade |
-| POST | `/market/cancel/{trade}` | auth, has.team | Cancel trade |
-| GET | `/market/history` | auth, has.team | Trade history |
-| GET | `/statistics` | auth, has.team | Team statistics |
-| GET | `/races` | auth, has.team | Race list |
-| GET | `/races/{race}` | auth, has.team | Race detail |
-| GET/POST | `/races/{race}/lineup` | auth, has.team | Lineup editor |
-| GET | `/races/{race}/standings` | auth, has.team | Race standings |
-| — | `/admin/*` | Filament auth | Admin panel |
+| GET | `/` | — | Pagina di benvenuto |
+| GET | `/dashboard` | auth, verified, has.team | Dashboard squadra |
+| GET/POST | `/create-team` | auth | Crea squadra |
+| GET | `/auction` | auth | Mostra asta |
+| POST | `/auction/buy/{rider}` | auth | Acquista corridore |
+| POST | `/roster/release/{rider}` | auth | Svincola corridore |
+| GET | `/market` | auth, has.team | Mercato scambi |
+| POST | `/market/accept/{trade}` | auth, has.team | Accetta scambio |
+| POST | `/market/reject/{trade}` | auth, has.team | Rifiuta scambio |
+| POST | `/market/cancel/{trade}` | auth, has.team | Annulla scambio |
+| GET | `/market/history` | auth, has.team | Storico scambi |
+| GET | `/statistics` | auth, has.team | Statistiche squadra |
+| GET | `/races` | auth, has.team | Lista gare |
+| GET | `/races/{race}` | auth, has.team | Dettaglio gara |
+| GET/POST | `/races/{race}/lineup` | auth, has.team | Editor formazione |
+| GET | `/races/{race}/standings` | auth, has.team | Classifica gara |
+| — | `/admin/*` | Filament auth | Pannello admin |
 
 ---
 
-## Game Rules & Configuration
+## Regole di Gioco e Configurazione
 
-All configurable game rules live in `app/Services/SettingManager.php` and are persisted in the `settings` table. Values are cached forever (invalidate manually when changed).
+Tutte le regole di gioco configurabili si trovano in `app/Services/SettingManager.php` e vengono salvate nella tabella `settings`. I valori sono cachati a tempo indeterminato (svuotare manualmente la cache dopo ogni modifica).
 
-| Setting Key | Default | Description |
+| Chiave | Default | Descrizione |
 |---|---|---|
-| `initial_budget` | 700 | Starting budget (fantamilioni) |
-| `team_size` | 45 | Max cyclists per team |
-| `max_gc` | 8 | Max GC riders |
-| `max_puncher` | 8 | Max Puncher riders |
-| `max_pave` | 5 | Max Pavé riders |
-| `max_velocisti` | 7 | Max Sprinters |
-| `max_cronomen` | 3 | Max Time trialists |
-| `max_gregari` | 6 | Max Domestiques |
-| `max_next_gen` | 8 | Max Next Gen riders |
-| `release_recovery_percentage_pre_season` | 100 | % budget back when releasing pre-season |
-| `release_recovery_percentage_mid_season` | 50 | % budget back mid-season |
-| `annual_devaluation_percentage` | 20 | Annual rider value devaluation % |
-| `salary_percentage` | 20 | Salary as % of purchase price |
-| `rebuy_penalty_amount` | 25 | Fine for re-buying a just-released rider |
-| `max_trades_per_team` | 5 | Max team-to-team trades |
+| `initial_budget` | 700 | Budget iniziale (fantamilioni) |
+| `team_size` | 45 | Numero massimo di corridori per squadra |
+| `max_gc` | 8 | Massimo corridori GC |
+| `max_puncher` | 8 | Massimo corridori Puncher |
+| `max_pave` | 5 | Massimo corridori Pavé |
+| `max_velocisti` | 7 | Massimo velocisti |
+| `max_cronomen` | 3 | Massimo cronomen |
+| `max_gregari` | 6 | Massimo gregari |
+| `max_next_gen` | 8 | Massimo Next Gen |
+| `release_recovery_percentage_pre_season` | 100 | % budget recuperato per svincoli pre-stagione |
+| `release_recovery_percentage_mid_season` | 50 | % budget recuperato per svincoli in stagione |
+| `annual_devaluation_percentage` | 20 | % di svalutazione annuale del cartellino |
+| `salary_percentage` | 20 | % del valore d'acquisto per lo stipendio |
+| `rebuy_penalty_amount` | 25 | Multa per riacquisto di un corridore appena svincolato |
+| `max_trades_per_team` | 5 | Numero massimo di scambi per squadra |
 
-Read a setting: `SettingManager::get('initial_budget')`
+Per leggere un'impostazione: `SettingManager::get('initial_budget')`
 
 ---
 
-## Admin Panel
+## Pannello Admin
 
 - URL: `/admin`
-- Credentials seeded by `AdminUserSeeder`: `admin@test.com` (check seeder for password)
-- Admin check in `User` model uses hardcoded email comparison
-- Manage: Users, Riders, RiderCategories, Auctions, Races, Settings, RaceCreditRules
+- Credenziali create da `AdminUserSeeder`: `admin@test.com` (verificare la password nel seeder)
+- Il controllo admin nel model `User` usa un confronto email hardcoded
+- Gestisce: Utenti, Corridori, Categorie, Aste, Gare, Impostazioni, Regole Crediti Gara
 
 ---
 
-## Code Conventions
+## Convenzioni del Codice
 
-- **Language:** Italian is used throughout for comments, route comments, and user-facing strings. Code identifiers follow English Laravel conventions.
-- **Naming:**
-  - Models: singular PascalCase (`PlayerTeam`, `RiderCategory`)
-  - Tables: plural snake_case (`player_teams`, `rider_categories`)
-  - Controllers: PascalCase with `Controller` suffix
-  - Blade views: kebab-case (`player-team/show.blade.php`)
-  - Methods: camelCase
-- **Database integrity:** Wrap multi-step operations (trades, purchases) in `DB::transaction()`.
-- **Settings cache:** After modifying a `Setting` record, clear its cache key: `Cache::forget('setting.'.$key)`.
-- **Middleware:** Register custom middleware in `bootstrap/app.php` (Laravel 12 style, not `Kernel.php`).
-- **Livewire:** Interactive forms use Livewire components in `app/Livewire/`; views in `resources/views/livewire/`.
-- **Filament resources:** Located in `app/Filament/Resources/`; each has its own `Pages/` subdirectory.
+- **Lingua:** I commenti, le note nelle rotte e le stringhe rivolte all'utente sono in italiano. Gli identificatori nel codice seguono le convenzioni Laravel in inglese.
+- **Nomenclatura:**
+  - Model: singolare PascalCase (`PlayerTeam`, `RiderCategory`)
+  - Tabelle: plurale snake_case (`player_teams`, `rider_categories`)
+  - Controller: PascalCase con suffisso `Controller`
+  - View Blade: kebab-case (`player-team/show.blade.php`)
+  - Metodi: camelCase
+- **Integrità del database:** Avvolgere le operazioni multi-step (scambi, acquisti) in `DB::transaction()`.
+- **Cache impostazioni:** Dopo aver modificato un record `Setting`, svuotare la sua chiave cache: `Cache::forget('setting.'.$key)`.
+- **Middleware:** Registrare i middleware personalizzati in `bootstrap/app.php` (stile Laravel 12, non `Kernel.php`).
+- **Livewire:** I form interattivi usano componenti Livewire in `app/Livewire/`; le view corrispondenti sono in `resources/views/livewire/`.
+- **Risorse Filament:** Situate in `app/Filament/Resources/`; ciascuna ha la propria sottodirectory `Pages/`.
 
 ---
 
-## Testing
+## Test
 
-Tests use PHPUnit with an in-memory SQLite database (configured in `phpunit.xml`).
+I test usano PHPUnit con un database SQLite in memoria (configurato in `phpunit.xml`).
 
 ```
 tests/
-├── Feature/    # Integration tests (auth flows, profile management)
-└── Unit/       # Unit tests (currently minimal)
+├── Feature/    # Test di integrazione (autenticazione, gestione profilo)
+└── Unit/       # Test unitari (attualmente minimali)
 ```
 
-When adding tests:
-- Extend `Tests\TestCase`
-- Use `RefreshDatabase` trait for database isolation
-- Use `UserFactory` for test users
+Quando si aggiungono test:
+- Estendere `Tests\TestCase`
+- Usare il trait `RefreshDatabase` per l'isolamento del database
+- Usare `UserFactory` per creare utenti di test
 
-Current test coverage is focused on authentication/profile. Game logic (auctions, trades, races) needs more tests.
+La copertura attuale è focalizzata su autenticazione e profilo. La logica di gioco (aste, scambi, punteggi gare) necessita di più test.
 
 ---
 
-## Environment Variables
+## Variabili d'Ambiente
 
-Copy `.env.example` to `.env` and run `php artisan key:generate`. Key variables:
+Copiare `.env.example` in `.env` e lanciare `php artisan key:generate`. Variabili principali:
 
 ```dotenv
 APP_NAME=Fantaciclismo
@@ -222,30 +222,30 @@ APP_ENV=local
 APP_DEBUG=true
 APP_URL=http://localhost
 
-DB_CONNECTION=sqlite          # Use mysql/pgsql for production
+DB_CONNECTION=sqlite          # Usare mysql/pgsql in produzione
 
-APP_LOCALE=it                 # Italian locale
+APP_LOCALE=it                 # Lingua italiana
 APP_FALLBACK_LOCALE=en
 
 SESSION_DRIVER=database
 QUEUE_CONNECTION=database
 CACHE_STORE=database
 
-MAIL_MAILER=log               # Emails go to log in development
+MAIL_MAILER=log               # Le email vanno nei log in sviluppo
 ```
 
 ---
 
-## Known Issues / Areas of Attention
+## Problemi Noti / Aree di Attenzione
 
-- **Counter-offer system:** The `parent_trade_id` column on `trades` exists but counter-offer logic was simplified. Marked as "da fixare" in git history.
-- **Test coverage:** Game core logic (auction, trade, race scoring) lacks feature tests.
-- **Admin auth:** The admin check uses a hardcoded email in `User::isAdmin()` — not suitable for multi-admin production setups.
-- **Settings cache invalidation:** `SettingManager::get()` caches forever. Admin changes to settings via Filament need manual cache clearing or a cache-busting observer.
+- **Sistema di contro-offerte:** La colonna `parent_trade_id` sulla tabella `trades` esiste ma la logica delle contro-offerte è stata semplificata. Segnalato come "da fixare" nella storia dei commit.
+- **Copertura dei test:** La logica di gioco principale (aste, scambi, punteggi gare) non ha test di feature.
+- **Autenticazione admin:** Il controllo admin usa un'email hardcoded in `User::isAdmin()` — non adatto per ambienti di produzione con più admin.
+- **Invalidazione cache impostazioni:** `SettingManager::get()` cachà a tempo indeterminato. Le modifiche alle impostazioni tramite Filament richiedono svuotamento manuale della cache o un observer dedicato.
 
 ---
 
-## Related Documentation
+## Documentazione Correlata
 
-- `GAME_ANALYSIS.md` — Comprehensive Italian-language game design document covering mechanics, scoring, feature checklist, and improvement proposals.
-- `README.md` — Default Laravel README (not project-specific).
+- `GAME_ANALYSIS.md` — Documento di game design completo in italiano: meccaniche, punteggi, checklist delle funzionalità e proposte di miglioramento.
+- `README.md` — README predefinito di Laravel (non specifico del progetto).
