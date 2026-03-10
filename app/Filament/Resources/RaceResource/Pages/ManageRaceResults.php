@@ -11,6 +11,7 @@ use App\Models\RaceLineup;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Pages\Page;
+use Filament\Resources\Pages\Concerns\InteractsWithRecord;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Filament\Tables\Concerns\InteractsWithTable;
@@ -22,6 +23,7 @@ use Livewire\WithFileUploads;
 
 class ManageRaceResults extends Page implements HasTable
 {
+    use InteractsWithRecord;
     use InteractsWithTable;
     use WithFileUploads;
 
@@ -29,13 +31,11 @@ class ManageRaceResults extends Page implements HasTable
 
     protected static string $view = 'filament.resources.race-resource.pages.manage-race-results';
 
-    public Race $record;
-
     public $csvFile;
 
     public function mount(int | string $record): void
     {
-        $this->record = Race::findOrFail($record);
+        $this->record = $this->resolveRecord($record);
     }
 
     public function getTitle(): string
