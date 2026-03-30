@@ -185,20 +185,62 @@ class PlayerTeamController extends Controller
             }
 
             $offeringTeam = $trade->offeringTeam;
-            
+
+            // Validazione limiti categoria per SQUADRA CHE ACCETTA (receiving)
+            // Calcola il bilancio netto per ogni categoria
+            $categoryChangesReceiving = [];
             foreach ($offeredRiders as $rider) {
-                $categoryKey = 'max_' . strtolower($rider->category->name);
-                $maxForCategory = SettingManager::get($categoryKey);
-                
-                if ($maxForCategory !== null) {
-                    $currentCount = $receivingTeam->riders()
-                        ->where('rider_category_id', $rider->rider_category_id)
-                        ->count();
-                    
-                    $givingAwayCount = $requestedRiders->where('rider_category_id', $rider->rider_category_id)->count();
-                    
-                    if (($currentCount - $givingAwayCount + 1) > $maxForCategory) {
-                        return back()->with('error', "Superato il limite massimo per la categoria {$rider->category->name}!");
+                $catId = $rider->rider_category_id;
+                $categoryChangesReceiving[$catId] = ($categoryChangesReceiving[$catId] ?? 0) + 1;
+            }
+            foreach ($requestedRiders as $rider) {
+                $catId = $rider->rider_category_id;
+                $categoryChangesReceiving[$catId] = ($categoryChangesReceiving[$catId] ?? 0) - 1;
+            }
+
+            foreach ($categoryChangesReceiving as $categoryId => $netChange) {
+                if ($netChange > 0) {
+                    $rider = $offeredRiders->firstWhere('rider_category_id', $categoryId);
+                    $categoryKey = 'max_' . strtolower($rider->category->name);
+                    $maxForCategory = SettingManager::get($categoryKey);
+
+                    if ($maxForCategory !== null) {
+                        $currentCount = $receivingTeam->riders()
+                            ->where('rider_category_id', $categoryId)
+                            ->count();
+
+                        if (($currentCount + $netChange) > $maxForCategory) {
+                            return back()->with('error', "Accettando supereresti il limite massimo ({$maxForCategory}) per la categoria {$rider->category->name}! Avresti " . ($currentCount + $netChange) . " corridori.");
+                        }
+                    }
+                }
+            }
+
+            // Validazione limiti categoria per SQUADRA CHE PROPONE (offering)
+            $categoryChangesOffering = [];
+            foreach ($requestedRiders as $rider) {
+                $catId = $rider->rider_category_id;
+                $categoryChangesOffering[$catId] = ($categoryChangesOffering[$catId] ?? 0) + 1;
+            }
+            foreach ($offeredRiders as $rider) {
+                $catId = $rider->rider_category_id;
+                $categoryChangesOffering[$catId] = ($categoryChangesOffering[$catId] ?? 0) - 1;
+            }
+
+            foreach ($categoryChangesOffering as $categoryId => $netChange) {
+                if ($netChange > 0) {
+                    $rider = $requestedRiders->firstWhere('rider_category_id', $categoryId);
+                    $categoryKey = 'max_' . strtolower($rider->category->name);
+                    $maxForCategory = SettingManager::get($categoryKey);
+
+                    if ($maxForCategory !== null) {
+                        $currentCount = $offeringTeam->riders()
+                            ->where('rider_category_id', $categoryId)
+                            ->count();
+
+                        if (($currentCount + $netChange) > $maxForCategory) {
+                            return back()->with('error', "Lo scambio farebbe superare alla squadra proponente il limite massimo ({$maxForCategory}) per la categoria {$rider->category->name}!");
+                        }
                     }
                 }
             }

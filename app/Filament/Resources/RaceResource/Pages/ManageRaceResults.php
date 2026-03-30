@@ -110,30 +110,60 @@ class ManageRaceResults extends Page implements HasTable
     public function importCsv(): void
     {
         $this->validate([
-            'csvFile' => 'required|file|mimes:csv,txt',
+            'csvFile' => 'required|file',
         ]);
 
-        $path = $this->csvFile->getRealPath();
-        $handle = fopen($path, 'r');
-
-        // Salta l'header
-        fgetcsv($handle);
-
-        $imported = 0;
-        $errors = [];
-
-        DB::beginTransaction();
-
         try {
-            while (($row = fgetcsv($handle)) !== false) {
+            $path = $this->csvFile->getRealPath();
+
+            if (!$path || !file_exists($path)) {
+                Notification::make()
+                    ->title('Errore')
+                    ->body('Impossibile leggere il file caricato.')
+                    ->danger()
+                    ->send();
+                return;
+            }
+
+            $content = file_get_contents($path);
+
+            // Rileva il delimitatore (virgola o punto e virgola)
+            $delimiter = (substr_count($content, ';') > substr_count($content, ',')) ? ';' : ',';
+
+            $handle = fopen($path, 'r');
+            if (!$handle) {
+                Notification::make()
+                    ->title('Errore')
+                    ->body('Impossibile aprire il file.')
+                    ->danger()
+                    ->send();
+                return;
+            }
+
+            // Salta l'header
+            fgetcsv($handle, 0, $delimiter);
+
+            $imported = 0;
+            $errors = [];
+
+            DB::beginTransaction();
+
+            while (($row = fgetcsv($handle, 0, $delimiter)) !== false) {
                 // Formato atteso: nome_corridore, posizione, crediti
                 if (count($row) < 3) continue;
+
+                // Salta righe vuote
+                if (empty(trim($row[0]))) continue;
 
                 $riderName = trim($row[0]);
                 $position = (int) trim($row[1]);
                 $credits = (int) trim($row[2]);
 
-                $rider = Rider::where('name', 'like', "%{$riderName}%")->first();
+                // Cerca corridore per nome esatto o parziale
+                $rider = Rider::where('name', $riderName)->first();
+                if (!$rider) {
+                    $rider = Rider::where('name', 'like', "%{$riderName}%")->first();
+                }
 
                 if (!$rider) {
                     $errors[] = "Corridore non trovato: {$riderName}";
@@ -173,7 +203,6 @@ class ManageRaceResults extends Page implements HasTable
 
         } catch (\Exception $e) {
             DB::rollBack();
-            fclose($handle);
 
             Notification::make()
                 ->title('Errore import')
