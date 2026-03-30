@@ -115,20 +115,28 @@
                         @if($trade->money_adjustment != 0)
                             <div class="mt-4 p-3 bg-blue-50 rounded-md border border-blue-200">
                                 <p class="text-sm font-medium text-blue-900">
-                                    💰 Movimento monetario: 
+                                    💰 Movimento monetario:
                                     @if($trade->money_adjustment > 0)
-                                        <strong>{{ $trade->offeringTeam->name }}</strong> ha dato 
-                                        <span class="text-green-600 font-semibold">{{ $trade->money_adjustment }}M</span> 
+                                        <strong>{{ $trade->offeringTeam->name }}</strong> ha dato
+                                        <span class="text-green-600 font-semibold">{{ $trade->money_adjustment }}M</span>
                                         a <strong>{{ $trade->receivingTeam->name }}</strong>
                                     @else
-                                        <strong>{{ $trade->receivingTeam->name }}</strong> ha dato 
-                                        <span class="text-green-600 font-semibold">{{ abs($trade->money_adjustment) }}M</span> 
+                                        <strong>{{ $trade->receivingTeam->name }}</strong> ha dato
+                                        <span class="text-green-600 font-semibold">{{ abs($trade->money_adjustment) }}M</span>
                                         a <strong>{{ $trade->offeringTeam->name }}</strong>
                                     @endif
                                 </p>
                             </div>
                         @endif
-                        
+
+                        {{-- Motivo Rifiuto --}}
+                        @if($trade->status === 'rejected' && $trade->rejection_reason)
+                            <div class="mt-4 p-3 bg-red-50 rounded-md border border-red-200">
+                                <p class="text-sm font-medium text-red-700 mb-1">📝 Motivo del rifiuto:</p>
+                                <p class="text-sm text-red-900">{{ $trade->rejection_reason }}</p>
+                            </div>
+                        @endif
+
                     </div>
                 @empty
                     <div class="text-center py-12">

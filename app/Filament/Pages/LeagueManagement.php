@@ -43,176 +43,120 @@ class LeagueManagement extends Page
         ];
     }
 
-    protected function getHeaderActions(): array
+    public function resetTeamsBudget(): void
     {
-        return [
-            Action::make('resetTeamsBudget')
-                ->label('Reset Budget Squadre')
-                ->icon('heroicon-o-banknotes')
-                ->color('warning')
-                ->requiresConfirmation()
-                ->modalHeading('Reset Budget Squadre')
-                ->modalDescription('Questa azione resetterà il budget di tutte le squadre al valore iniziale. I corridori rimarranno assegnati.')
-                ->action(function () {
-                    $initialBudget = SettingManager::get('initial_budget');
-                    PlayerTeam::query()->update(['balance' => $initialBudget]);
+        $initialBudget = SettingManager::get('initial_budget');
+        PlayerTeam::query()->update(['balance' => $initialBudget]);
 
-                    Notification::make()
-                        ->title('Budget resettato')
-                        ->body('Tutte le squadre hanno ora ' . $initialBudget . 'M di budget.')
-                        ->success()
-                        ->send();
-                }),
+        Notification::make()
+            ->title('Budget resettato')
+            ->body('Tutte le squadre hanno ora ' . $initialBudget . 'M di budget.')
+            ->success()
+            ->send();
+    }
 
-            Action::make('releaseAllRiders')
-                ->label('Svincola Tutti i Corridori')
-                ->icon('heroicon-o-user-minus')
-                ->color('warning')
-                ->requiresConfirmation()
-                ->modalHeading('Svincola Tutti i Corridori')
-                ->modalDescription('Questa azione rimuoverà tutti i corridori dalle squadre. I corridori torneranno disponibili all\'asta.')
-                ->action(function () {
-                    Rider::query()->update(['player_team_id' => null]);
+    public function releaseAllRiders(): void
+    {
+        Rider::query()->update(['player_team_id' => null]);
 
-                    Notification::make()
-                        ->title('Corridori svincolati')
-                        ->body('Tutti i corridori sono stati svincolati.')
-                        ->success()
-                        ->send();
-                }),
+        Notification::make()
+            ->title('Corridori svincolati')
+            ->body('Tutti i corridori sono stati svincolati.')
+            ->success()
+            ->send();
+    }
 
-            Action::make('deleteAllTrades')
-                ->label('Elimina Tutti gli Scambi')
-                ->icon('heroicon-o-arrows-right-left')
-                ->color('danger')
-                ->requiresConfirmation()
-                ->modalHeading('Elimina Tutti gli Scambi')
-                ->modalDescription('Questa azione eliminerà tutto lo storico degli scambi.')
-                ->action(function () {
-                    DB::table('rider_trade')->delete();
-                    Trade::query()->delete();
+    public function deleteAllTrades(): void
+    {
+        DB::table('rider_trade')->delete();
+        Trade::query()->delete();
 
-                    Notification::make()
-                        ->title('Scambi eliminati')
-                        ->body('Tutti gli scambi sono stati eliminati.')
-                        ->success()
-                        ->send();
-                }),
+        Notification::make()
+            ->title('Scambi eliminati')
+            ->body('Tutti gli scambi sono stati eliminati.')
+            ->success()
+            ->send();
+    }
 
-            Action::make('deleteAllRaceData')
-                ->label('Elimina Risultati e Formazioni')
-                ->icon('heroicon-o-flag')
-                ->color('danger')
-                ->requiresConfirmation()
-                ->modalHeading('Elimina Risultati e Formazioni')
-                ->modalDescription('Questa azione eliminerà tutti i risultati delle gare e le formazioni schierate. Le gare rimarranno.')
-                ->action(function () {
-                    DB::table('race_lineup_rider')->delete();
-                    RaceLineup::query()->delete();
-                    RaceResult::query()->delete();
+    public function deleteAllRaceData(): void
+    {
+        DB::table('race_lineup_rider')->delete();
+        RaceLineup::query()->delete();
+        RaceResult::query()->delete();
+        Race::query()->update(['status' => 'upcoming']);
 
-                    // Reset stato gare a upcoming
-                    Race::query()->update(['status' => 'upcoming']);
+        Notification::make()
+            ->title('Dati gare eliminati')
+            ->body('Risultati e formazioni eliminati. Le gare sono state resettate.')
+            ->success()
+            ->send();
+    }
 
-                    Notification::make()
-                        ->title('Dati gare eliminati')
-                        ->body('Risultati e formazioni eliminati. Le gare sono state resettate.')
-                        ->success()
-                        ->send();
-                }),
+    public function fullReset(): void
+    {
+        DB::beginTransaction();
 
-            Action::make('fullReset')
-                ->label('RESET COMPLETO LEGA')
-                ->icon('heroicon-o-exclamation-triangle')
-                ->color('danger')
-                ->requiresConfirmation()
-                ->modalHeading('ATTENZIONE: Reset Completo')
-                ->modalDescription('Questa azione eliminerà: tutti gli scambi, tutti i risultati, tutte le formazioni, e svincola tutti i corridori resettando il budget. Le squadre, le gare e i corridori rimarranno. Sei sicuro?')
-                ->modalSubmitActionLabel('Sì, resetta tutto')
-                ->action(function () {
-                    DB::beginTransaction();
+        try {
+            DB::table('rider_trade')->delete();
+            Trade::query()->delete();
+            DB::table('race_lineup_rider')->delete();
+            RaceLineup::query()->delete();
+            RaceResult::query()->delete();
+            Race::query()->update(['status' => 'upcoming']);
+            Rider::query()->update(['player_team_id' => null]);
 
-                    try {
-                        // Elimina scambi
-                        DB::table('rider_trade')->delete();
-                        Trade::query()->delete();
+            $initialBudget = SettingManager::get('initial_budget');
+            PlayerTeam::query()->update(['balance' => $initialBudget]);
 
-                        // Elimina dati gare
-                        DB::table('race_lineup_rider')->delete();
-                        RaceLineup::query()->delete();
-                        RaceResult::query()->delete();
+            DB::commit();
 
-                        // Reset gare
-                        Race::query()->update(['status' => 'upcoming']);
+            Notification::make()
+                ->title('Reset completato')
+                ->body('La lega è stata resettata. Puoi ricominciare!')
+                ->success()
+                ->send();
 
-                        // Svincola corridori
-                        Rider::query()->update(['player_team_id' => null]);
+        } catch (\Exception $e) {
+            DB::rollBack();
 
-                        // Reset budget
-                        $initialBudget = SettingManager::get('initial_budget');
-                        PlayerTeam::query()->update(['balance' => $initialBudget]);
+            Notification::make()
+                ->title('Errore')
+                ->body('Errore durante il reset: ' . $e->getMessage())
+                ->danger()
+                ->send();
+        }
+    }
 
-                        DB::commit();
+    public function deleteAllTeams(): void
+    {
+        DB::beginTransaction();
 
-                        Notification::make()
-                            ->title('Reset completato')
-                            ->body('La lega è stata resettata. Puoi ricominciare!')
-                            ->success()
-                            ->send();
+        try {
+            DB::table('rider_trade')->delete();
+            Trade::query()->delete();
+            DB::table('race_lineup_rider')->delete();
+            RaceLineup::query()->delete();
+            Rider::query()->update(['player_team_id' => null]);
+            PlayerTeam::query()->delete();
+            Race::query()->update(['status' => 'upcoming']);
+            RaceResult::query()->delete();
 
-                    } catch (\Exception $e) {
-                        DB::rollBack();
+            DB::commit();
 
-                        Notification::make()
-                            ->title('Errore')
-                            ->body('Errore durante il reset: ' . $e->getMessage())
-                            ->danger()
-                            ->send();
-                    }
-                }),
+            Notification::make()
+                ->title('Squadre eliminate')
+                ->body('Tutte le squadre sono state eliminate.')
+                ->success()
+                ->send();
 
-            Action::make('deleteAllTeams')
-                ->label('ELIMINA TUTTE LE SQUADRE')
-                ->icon('heroicon-o-trash')
-                ->color('danger')
-                ->requiresConfirmation()
-                ->modalHeading('ATTENZIONE: Elimina Tutte le Squadre')
-                ->modalDescription('Questa azione eliminerà TUTTE le squadre e tutti i dati correlati (scambi, formazioni, risultati). Gli utenti e i corridori rimarranno. Sei sicuro?')
-                ->modalSubmitActionLabel('Sì, elimina tutto')
-                ->action(function () {
-                    DB::beginTransaction();
+        } catch (\Exception $e) {
+            DB::rollBack();
 
-                    try {
-                        // Elimina in ordine di dipendenza
-                        DB::table('rider_trade')->delete();
-                        Trade::query()->delete();
-                        DB::table('race_lineup_rider')->delete();
-                        RaceLineup::query()->delete();
-                        Rider::query()->update(['player_team_id' => null]);
-                        PlayerTeam::query()->delete();
-
-                        // Reset gare
-                        Race::query()->update(['status' => 'upcoming']);
-                        RaceResult::query()->delete();
-
-                        DB::commit();
-
-                        Notification::make()
-                            ->title('Squadre eliminate')
-                            ->body('Tutte le squadre sono state eliminate.')
-                            ->success()
-                            ->send();
-
-                    } catch (\Exception $e) {
-                        DB::rollBack();
-
-                        Notification::make()
-                            ->title('Errore')
-                            ->body('Errore: ' . $e->getMessage())
-                            ->danger()
-                            ->send();
-                    }
-                }),
-        ];
+            Notification::make()
+                ->title('Errore')
+                ->body('Errore: ' . $e->getMessage())
+                ->danger()
+                ->send();
+        }
     }
 }

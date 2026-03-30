@@ -95,21 +95,42 @@
                             @endif
 
                             {{-- Bottoni Azione --}}
-<div class="grid grid-cols-2 gap-3">
-    <form method="POST" action="{{ route('market.accept', $trade) }}">
-        @csrf
-        <button type="submit"
-                class="w-full px-4 py-2 bg-green-600 text-white text-sm font-semibold rounded-lg hover:bg-green-700 transition duration-150">
-            Accetta
-        </button>
-    </form>
+<div class="space-y-3">
+    <div class="grid grid-cols-2 gap-3">
+        <form method="POST" action="{{ route('market.accept', $trade) }}">
+            @csrf
+            <button type="submit"
+                    class="w-full px-4 py-2 bg-green-600 text-white text-sm font-semibold rounded-lg hover:bg-green-700 transition duration-150">
+                Accetta
+            </button>
+        </form>
 
-    <form method="POST" action="{{ route('market.reject', $trade) }}">
-        @csrf
-        <button type="submit"
+        <button type="button"
+                onclick="document.getElementById('reject-form-{{ $trade->id }}').classList.toggle('hidden')"
                 class="w-full px-4 py-2 bg-red-600 text-white text-sm font-semibold rounded-lg hover:bg-red-700 transition duration-150">
             Rifiuta
         </button>
+    </div>
+
+    {{-- Form rifiuto con motivo --}}
+    <form id="reject-form-{{ $trade->id }}" method="POST" action="{{ route('market.reject', $trade) }}" class="hidden">
+        @csrf
+        <div class="bg-red-50 border border-red-200 rounded-lg p-3 space-y-3">
+            <label for="rejection_reason_{{ $trade->id }}" class="block text-sm font-medium text-red-700">
+                Motivo del rifiuto (opzionale):
+            </label>
+            <textarea
+                id="rejection_reason_{{ $trade->id }}"
+                name="rejection_reason"
+                rows="2"
+                class="w-full rounded-md border-red-300 shadow-sm focus:border-red-500 focus:ring-red-500 text-sm"
+                placeholder="Es: Non mi interessa questo scambio, preferisco tenere il mio corridore..."
+            ></textarea>
+            <button type="submit"
+                    class="w-full px-4 py-2 bg-red-600 text-white text-sm font-semibold rounded-lg hover:bg-red-700 transition duration-150">
+                Conferma Rifiuto
+            </button>
+        </div>
     </form>
 </div>
                         </div>

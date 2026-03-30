@@ -46,6 +46,10 @@ class TradeResource extends Resource
                         'cancelled' => 'Annullato',
                     ])
                     ->label('Stato'),
+                Forms\Components\Textarea::make('rejection_reason')
+                    ->label('Motivo Rifiuto')
+                    ->rows(3)
+                    ->columnSpanFull(),
             ]);
     }
 
@@ -91,6 +95,13 @@ class TradeResource extends Resource
                         'cancelled' => 'Annullato',
                         default => $state,
                     }),
+                Tables\Columns\TextColumn::make('rejection_reason')
+                    ->label('Motivo Rifiuto')
+                    ->limit(50)
+                    ->tooltip(function ($record) {
+                        return $record->rejection_reason;
+                    })
+                    ->placeholder('-'),
                 Tables\Columns\TextColumn::make('created_at')
                     ->label('Data Proposta')
                     ->dateTime('d/m/Y H:i')

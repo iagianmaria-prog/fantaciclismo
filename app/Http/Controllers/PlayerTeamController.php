@@ -294,7 +294,7 @@ class PlayerTeamController extends Controller
     /**
      * Rifiuta una proposta di scambio.
      */
-    public function rejectTrade(Trade $trade)
+    public function rejectTrade(Request $request, Trade $trade)
     {
         try {
             $receivingTeam = Auth::user()->playerTeam;
@@ -308,10 +308,11 @@ class PlayerTeamController extends Controller
             }
 
             $trade->status = 'rejected';
+            $trade->rejection_reason = $request->input('rejection_reason');
             $trade->save();
 
             return back()->with('status', 'Scambio rifiutato.');
-            
+
         } catch (Exception $e) {
             return back()->with('error', 'Errore durante il rifiuto: ' . $e->getMessage());
         }

@@ -12,10 +12,11 @@ class Trade extends Model
     use HasFactory;
     
     protected $fillable = [
-        'offering_team_id', 
-        'receiving_team_id', 
-        'money_adjustment', 
+        'offering_team_id',
+        'receiving_team_id',
+        'money_adjustment',
         'status',
+        'rejection_reason',
         'parent_trade_id'
     ];
 

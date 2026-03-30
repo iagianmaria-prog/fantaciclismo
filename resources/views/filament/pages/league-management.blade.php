@@ -63,25 +63,111 @@
             </div>
         </x-filament::section>
 
-        {{-- Azioni --}}
+        {{-- Azioni Moderate --}}
         <x-filament::section>
             <x-slot name="heading">
-                Azioni di Gestione
+                Azioni Moderate
             </x-slot>
 
-            <div class="prose dark:prose-invert max-w-none">
-                <p class="text-sm text-gray-500">
-                    Usa i pulsanti in alto a destra per gestire la lega. Le azioni sono ordinate dalla meno distruttiva alla più distruttiva.
-                </p>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="border rounded-lg p-4 dark:border-gray-700">
+                    <h3 class="font-semibold mb-2">Reset Budget Squadre</h3>
+                    <p class="text-sm text-gray-500 mb-3">Resetta il budget di tutte le squadre al valore iniziale. I corridori rimarranno assegnati.</p>
+                    <x-filament::button
+                        wire:click="resetTeamsBudget"
+                        wire:confirm="Sei sicuro di voler resettare il budget di tutte le squadre?"
+                        color="warning"
+                        icon="heroicon-o-banknotes"
+                    >
+                        Reset Budget
+                    </x-filament::button>
+                </div>
 
-                <ul class="text-sm mt-4 space-y-2">
-                    <li><strong>Reset Budget Squadre:</strong> Resetta il budget di tutte le squadre al valore iniziale.</li>
-                    <li><strong>Svincola Tutti i Corridori:</strong> Rimuove tutti i corridori dalle squadre.</li>
-                    <li><strong>Elimina Tutti gli Scambi:</strong> Cancella lo storico degli scambi.</li>
-                    <li><strong>Elimina Risultati e Formazioni:</strong> Cancella risultati gare e formazioni schierate.</li>
-                    <li class="text-danger-600"><strong>RESET COMPLETO LEGA:</strong> Combina tutte le azioni sopra. Utile per iniziare una nuova stagione.</li>
-                    <li class="text-danger-600"><strong>ELIMINA TUTTE LE SQUADRE:</strong> Elimina completamente tutte le squadre. Gli utenti dovranno ricrearne di nuove.</li>
-                </ul>
+                <div class="border rounded-lg p-4 dark:border-gray-700">
+                    <h3 class="font-semibold mb-2">Svincola Tutti i Corridori</h3>
+                    <p class="text-sm text-gray-500 mb-3">Rimuove tutti i corridori dalle squadre. Torneranno disponibili all'asta.</p>
+                    <x-filament::button
+                        wire:click="releaseAllRiders"
+                        wire:confirm="Sei sicuro di voler svincolare TUTTI i corridori?"
+                        color="warning"
+                        icon="heroicon-o-user-minus"
+                    >
+                        Svincola Corridori
+                    </x-filament::button>
+                </div>
+
+                <div class="border rounded-lg p-4 dark:border-gray-700">
+                    <h3 class="font-semibold mb-2">Elimina Tutti gli Scambi</h3>
+                    <p class="text-sm text-gray-500 mb-3">Cancella tutto lo storico degli scambi tra squadre.</p>
+                    <x-filament::button
+                        wire:click="deleteAllTrades"
+                        wire:confirm="Sei sicuro di voler eliminare TUTTI gli scambi?"
+                        color="danger"
+                        icon="heroicon-o-arrows-right-left"
+                    >
+                        Elimina Scambi
+                    </x-filament::button>
+                </div>
+
+                <div class="border rounded-lg p-4 dark:border-gray-700">
+                    <h3 class="font-semibold mb-2">Elimina Risultati e Formazioni</h3>
+                    <p class="text-sm text-gray-500 mb-3">Cancella risultati gare e formazioni schierate. Le gare rimarranno.</p>
+                    <x-filament::button
+                        wire:click="deleteAllRaceData"
+                        wire:confirm="Sei sicuro di voler eliminare TUTTI i risultati e le formazioni?"
+                        color="danger"
+                        icon="heroicon-o-flag"
+                    >
+                        Elimina Dati Gare
+                    </x-filament::button>
+                </div>
+            </div>
+        </x-filament::section>
+
+        {{-- Azioni Distruttive --}}
+        <x-filament::section>
+            <x-slot name="heading">
+                Azioni Distruttive
+            </x-slot>
+
+            <div class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 mb-4">
+                <p class="text-sm text-red-600 dark:text-red-400">
+                    <strong>Attenzione!</strong> Queste azioni sono irreversibili e hanno un impatto significativo sulla lega.
+                </p>
+            </div>
+
+            <div class="grid grid-cols-1 gap-4">
+                <div class="border border-red-300 dark:border-red-700 rounded-lg p-4 bg-red-50/50 dark:bg-red-900/10">
+                    <h3 class="font-semibold mb-2 text-red-700 dark:text-red-400">RESET COMPLETO LEGA</h3>
+                    <p class="text-sm text-gray-500 mb-3">
+                        Elimina: tutti gli scambi, risultati, formazioni. Svincola tutti i corridori e resetta il budget.
+                        Le squadre, le gare e i corridori rimarranno. <strong>Ideale per iniziare una nuova stagione.</strong>
+                    </p>
+                    <x-filament::button
+                        wire:click="fullReset"
+                        wire:confirm="ATTENZIONE: Questa azione resetterà TUTTA la lega. Sei assolutamente sicuro?"
+                        color="danger"
+                        icon="heroicon-o-exclamation-triangle"
+                    >
+                        RESET COMPLETO LEGA
+                    </x-filament::button>
+                </div>
+
+                <div class="border border-red-300 dark:border-red-700 rounded-lg p-4 bg-red-50/50 dark:bg-red-900/10">
+                    <h3 class="font-semibold mb-2 text-red-700 dark:text-red-400">ELIMINA TUTTE LE SQUADRE</h3>
+                    <p class="text-sm text-gray-500 mb-3">
+                        Elimina TUTTE le squadre e tutti i dati correlati. Gli utenti e i corridori rimarranno.
+                        <strong>Gli utenti dovranno ricreare le squadre da zero.</strong>
+                    </p>
+                    <x-filament::button
+                        wire:click="deleteAllTeams"
+                        wire:confirm="ATTENZIONE ESTREMA: Questa azione eliminerà TUTTE le squadre. Sei assolutamente sicuro?"
+                        color="danger"
+                        icon="heroicon-o-trash"
+                    >
+                        ELIMINA TUTTE LE SQUADRE
+                    </x-filament::button>
+                </div>
             </div>
         </x-filament::section>
     </div>
