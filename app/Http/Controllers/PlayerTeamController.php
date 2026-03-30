@@ -81,11 +81,18 @@ class PlayerTeamController extends Controller
 
             $team->balance -= $rider->initial_value;
             $team->save();
+
+            // Imposta contratto automaticamente dalle impostazioni
+            $contractYears = (int) SettingManager::get('contract_duration_initial', 2);
+
             $rider->player_team_id = $team->id;
+            $rider->contract_years = $contractYears;
+            $rider->contract_remaining_years = $contractYears;
+            $rider->contract_start_date = now();
             $rider->save();
 
             DB::commit();
-            return back()->with('status', "Corridore {$rider->name} acquistato con successo!");
+            return back()->with('status', "Corridore {$rider->name} acquistato con successo! Contratto di {$contractYears} anni.");
         } catch (Exception $e) {
             DB::rollBack();
             return back()->with('error', "Si è verificato un errore imprevisto durante l'acquisto. Riprova.");

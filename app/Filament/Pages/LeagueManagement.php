@@ -40,6 +40,12 @@ class LeagueManagement extends Page
             'trades_total' => Trade::count(),
             'trades_pending' => Trade::where('status', 'pending')->count(),
             'trades_accepted' => Trade::where('status', 'accepted')->count(),
+            'expiring_contracts' => Rider::whereNotNull('player_team_id')
+                ->where('contract_remaining_years', '<=', 1)
+                ->count(),
+            'expired_contracts' => Rider::whereNotNull('player_team_id')
+                ->where('contract_remaining_years', '<=', 0)
+                ->count(),
         ];
     }
 
@@ -155,6 +161,109 @@ class LeagueManagement extends Page
             Notification::make()
                 ->title('Errore')
                 ->body('Errore: ' . $e->getMessage())
+                ->danger()
+                ->send();
+        }
+    }
+
+    /**
+     * Decrementa di 1 anno tutti i contratti dei corridori sotto contratto.
+     * Da usare a fine stagione.
+     */
+    public function decrementContracts(): void
+    {
+        $updated = Rider::whereNotNull('player_team_id')
+            ->whereNotNull('contract_remaining_years')
+            ->where('contract_remaining_years', '>', 0)
+            ->decrement('contract_remaining_years');
+
+        Notification::make()
+            ->title('Contratti aggiornati')
+            ->body("Decrementato 1 anno a {$updated} contratti.")
+            ->success()
+            ->send();
+    }
+
+    /**
+     * Svincola automaticamente i corridori con contratto scaduto (0 anni rimanenti).
+     */
+    public function releaseExpiredContracts(): void
+    {
+        $expiredRiders = Rider::whereNotNull('player_team_id')
+            ->where('contract_remaining_years', '<=', 0)
+            ->get();
+
+        $count = $expiredRiders->count();
+
+        if ($count === 0) {
+            Notification::make()
+                ->title('Nessun contratto scaduto')
+                ->body('Non ci sono corridori con contratto scaduto.')
+                ->info()
+                ->send();
+            return;
+        }
+
+        foreach ($expiredRiders as $rider) {
+            $rider->player_team_id = null;
+            $rider->contract_years = null;
+            $rider->contract_remaining_years = null;
+            $rider->contract_start_date = null;
+            $rider->save();
+        }
+
+        Notification::make()
+            ->title('Contratti scaduti gestiti')
+            ->body("{$count} corridori sono stati svincolati per contratto scaduto.")
+            ->success()
+            ->send();
+    }
+
+    /**
+     * Esegue tutte le operazioni di fine stagione:
+     * 1. Decrementa contratti
+     * 2. Svincola contratti scaduti
+     */
+    public function endSeason(): void
+    {
+        DB::beginTransaction();
+
+        try {
+            // 1. Decrementa tutti i contratti
+            $decremented = Rider::whereNotNull('player_team_id')
+                ->whereNotNull('contract_remaining_years')
+                ->where('contract_remaining_years', '>', 0)
+                ->decrement('contract_remaining_years');
+
+            // 2. Svincola i corridori con contratto scaduto
+            $expiredRiders = Rider::whereNotNull('player_team_id')
+                ->where('contract_remaining_years', '<=', 0)
+                ->get();
+
+            $expiredCount = $expiredRiders->count();
+
+            foreach ($expiredRiders as $rider) {
+                $rider->player_team_id = null;
+                $rider->contract_years = null;
+                $rider->contract_remaining_years = null;
+                $rider->contract_start_date = null;
+                $rider->save();
+            }
+
+            DB::commit();
+
+            Notification::make()
+                ->title('Fine Stagione Completata')
+                ->body("Contratti decrementati: {$decremented}. Corridori svincolati per scadenza: {$expiredCount}.")
+                ->success()
+                ->send();
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+
+            Notification::make()
+                ->title('Errore')
+                ->body('Errore durante fine stagione: ' . $e->getMessage())
                 ->danger()
                 ->send();
         }

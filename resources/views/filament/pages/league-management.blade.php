@@ -50,7 +50,7 @@
                 </div>
             </div>
 
-            <div class="mt-4 grid grid-cols-2 gap-4">
+            <div class="mt-4 grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div class="bg-yellow-50 dark:bg-yellow-900/20 rounded-lg p-4">
                     <div class="text-xl font-bold text-yellow-600">{{ $stats['trades_pending'] }}</div>
                     <div class="text-sm text-gray-500">Scambi In Attesa</div>
@@ -59,6 +59,70 @@
                 <div class="bg-green-50 dark:bg-green-900/20 rounded-lg p-4">
                     <div class="text-xl font-bold text-green-600">{{ $stats['trades_accepted'] }}</div>
                     <div class="text-sm text-gray-500">Scambi Accettati</div>
+                </div>
+
+                <div class="bg-orange-50 dark:bg-orange-900/20 rounded-lg p-4">
+                    <div class="text-xl font-bold text-orange-600">{{ $stats['expiring_contracts'] ?? 0 }}</div>
+                    <div class="text-sm text-gray-500">Contratti in Scadenza (≤1 anno)</div>
+                </div>
+
+                <div class="bg-red-50 dark:bg-red-900/20 rounded-lg p-4">
+                    <div class="text-xl font-bold text-red-600">{{ $stats['expired_contracts'] ?? 0 }}</div>
+                    <div class="text-sm text-gray-500">Contratti Scaduti</div>
+                </div>
+            </div>
+        </x-filament::section>
+
+        {{-- Gestione Contratti --}}
+        <x-filament::section>
+            <x-slot name="heading">
+                Gestione Contratti e Fine Stagione
+            </x-slot>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="border border-blue-200 dark:border-blue-700 rounded-lg p-4 bg-blue-50/50 dark:bg-blue-900/10">
+                    <h3 class="font-semibold mb-2 text-blue-700 dark:text-blue-400">Fine Stagione</h3>
+                    <p class="text-sm text-gray-500 mb-3">
+                        Esegue tutte le operazioni di fine stagione: decrementa di 1 anno tutti i contratti e svincola automaticamente i corridori con contratto scaduto.
+                    </p>
+                    <x-filament::button
+                        wire:click="endSeason"
+                        wire:confirm="Sei sicuro di voler eseguire la procedura di fine stagione? I contratti verranno decrementati e i corridori con contratto scaduto saranno svincolati."
+                        color="primary"
+                        icon="heroicon-o-calendar"
+                    >
+                        Esegui Fine Stagione
+                    </x-filament::button>
+                </div>
+
+                <div class="border rounded-lg p-4 dark:border-gray-700">
+                    <h3 class="font-semibold mb-2">Decrementa Contratti</h3>
+                    <p class="text-sm text-gray-500 mb-3">
+                        Decrementa di 1 anno tutti i contratti attivi. Non svincola automaticamente i corridori.
+                    </p>
+                    <x-filament::button
+                        wire:click="decrementContracts"
+                        wire:confirm="Sei sicuro di voler decrementare tutti i contratti di 1 anno?"
+                        color="warning"
+                        icon="heroicon-o-minus-circle"
+                    >
+                        Decrementa Contratti
+                    </x-filament::button>
+                </div>
+
+                <div class="border rounded-lg p-4 dark:border-gray-700">
+                    <h3 class="font-semibold mb-2">Svincola Contratti Scaduti</h3>
+                    <p class="text-sm text-gray-500 mb-3">
+                        Svincola solo i corridori con contratto scaduto (0 anni rimanenti).
+                    </p>
+                    <x-filament::button
+                        wire:click="releaseExpiredContracts"
+                        wire:confirm="Sei sicuro di voler svincolare tutti i corridori con contratto scaduto?"
+                        color="danger"
+                        icon="heroicon-o-user-minus"
+                    >
+                        Svincola Scaduti
+                    </x-filament::button>
                 </div>
             </div>
         </x-filament::section>
