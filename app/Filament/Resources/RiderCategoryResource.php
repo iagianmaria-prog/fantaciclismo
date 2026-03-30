@@ -56,7 +56,18 @@ public static function table(Table $table): Table
         ->actions([
             // QUESTE RIGHE MOSTRANO I PULSANTI "MODIFICA" E "CANCELLA"
             Tables\Actions\EditAction::make(),
-            Tables\Actions\DeleteAction::make(),
+            Tables\Actions\DeleteAction::make()
+                ->before(function (Tables\Actions\DeleteAction $action, RiderCategory $record) {
+                    $ridersCount = \App\Models\Rider::where('rider_category_id', $record->id)->count();
+                    if ($ridersCount > 0) {
+                        \Filament\Notifications\Notification::make()
+                            ->title('Impossibile eliminare')
+                            ->body("Questa categoria ha {$ridersCount} corridori associati. Rimuovi o sposta i corridori prima di eliminare la categoria.")
+                            ->danger()
+                            ->send();
+                        $action->cancel();
+                    }
+                }),
         ])
         ->bulkActions([
             Tables\Actions\BulkActionGroup::make([
