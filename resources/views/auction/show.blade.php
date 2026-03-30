@@ -36,6 +36,9 @@
                                     <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                         Valore
                                     </th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        Contratto
+                                    </th>
                                     <th scope="col" class="relative px-6 py-3">
                                         <span class="sr-only">Azione</span>
                                     </th>
@@ -51,20 +54,25 @@
                                             {{ $rider->category->name ?? 'N/A' }}
                                         </td>
                                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                            {{ $rider->initial_value }}
+                                            {{ $rider->initial_value }}M
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                            @if($rider->contract_years)
+                                                {{ $rider->contract_years }} anni
+                                            @else
+                                                -
+                                            @endif
                                         </td>
                                         <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                            {{-- === CODICE MODIFICATO === --}}
                                             <form method="POST" action="{{ route('auction.buy', $rider) }}">
                                                 @csrf
                                                 <x-primary-button>Acquista</x-primary-button>
                                             </form>
-                                            {{-- === FINE CODICE MODIFICATO === --}}
                                         </td>
                                     </tr>
                                 @empty
                                     <tr>
-                                        <td colspan="4" class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">
+                                        <td colspan="5" class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">
                                             Nessun corridore svincolato disponibile.
                                         </td>
                                     </tr>

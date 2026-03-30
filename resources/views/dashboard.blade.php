@@ -34,7 +34,9 @@
                                 <tr>
                                     <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nome</th>
                                     <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Categoria</th>
-                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Valore Acq.</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Valore</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Contratto</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Rimanenti</th>
                                     <th scope="col" class="relative px-6 py-3">
                                         <span class="sr-only">Azione</span>
                                     </th>
@@ -45,7 +47,27 @@
                                     <tr>
                                         <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{{ $rider->name }}</td>
                                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ $rider->category->name ?? 'N/A' }}</td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ $rider->initial_value }}</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ $rider->initial_value }}M</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                            @if($rider->contract_years)
+                                                {{ $rider->contract_years }} anni
+                                            @else
+                                                -
+                                            @endif
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm">
+                                            @if($rider->contract_remaining_years !== null)
+                                                <span class="px-2 py-1 rounded-full text-xs font-semibold
+                                                    @if($rider->contract_remaining_years <= 1) bg-red-100 text-red-800
+                                                    @elseif($rider->contract_remaining_years <= 2) bg-yellow-100 text-yellow-800
+                                                    @else bg-green-100 text-green-800
+                                                    @endif">
+                                                    {{ $rider->contract_remaining_years }} anni
+                                                </span>
+                                            @else
+                                                -
+                                            @endif
+                                        </td>
                                         <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                             <form method="POST" action="{{ route('roster.release', $rider) }}" onsubmit="return confirm('Sei sicuro di voler svincolare {{ addslashes($rider->name) }}?');">
                                                 @csrf
@@ -55,7 +77,7 @@
                                     </tr>
                                 @empty
                                     <tr>
-                                        <td colspan="4" class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">
+                                        <td colspan="6" class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">
                                             Non hai ancora acquistato nessun corridore. Vai all'asta!
                                         </td>
                                     </tr>

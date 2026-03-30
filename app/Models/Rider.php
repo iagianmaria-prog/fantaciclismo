@@ -16,6 +16,14 @@ class Rider extends Model
         'rider_category_id',
         'initial_value',
         'player_team_id',
+        'real_team',
+        'contract_years',
+        'contract_remaining_years',
+        'contract_start_date',
+    ];
+
+    protected $casts = [
+        'contract_start_date' => 'date',
     ];
 
     public function category(): BelongsTo

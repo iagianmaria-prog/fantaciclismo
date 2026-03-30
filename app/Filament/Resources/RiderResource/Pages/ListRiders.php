@@ -67,12 +67,24 @@ class ListRiders extends ListRecords
                             $fullName = trim($rowData['Cognome'] . ' ' . $rowData['Nome']);
                             $category = RiderCategory::firstOrCreate(['name' => trim($rowData['Categoria'])]);
 
-                            Rider::create([
+                            // Prepara dati corridore
+                            $riderData = [
                                 'name' => $fullName,
-                                'real_team' => trim($rowData['Team_Ufficiale']),
+                                'real_team' => trim($rowData['Team_Ufficiale'] ?? ''),
                                 'rider_category_id' => $category->id,
                                 'initial_value' => (int)trim($rowData['Prezzo']),
-                            ]);
+                            ];
+
+                            // Aggiungi campi contratto se presenti nel CSV
+                            if (isset($rowData['Contratto_Anni']) && $rowData['Contratto_Anni'] !== '') {
+                                $riderData['contract_years'] = (int)trim($rowData['Contratto_Anni']);
+                                $riderData['contract_remaining_years'] = (int)trim($rowData['Contratto_Anni']);
+                            }
+                            if (isset($rowData['Contratto_Rimanenti']) && $rowData['Contratto_Rimanenti'] !== '') {
+                                $riderData['contract_remaining_years'] = (int)trim($rowData['Contratto_Rimanenti']);
+                            }
+
+                            Rider::create($riderData);
 
                             $importedCount++;
                         }
