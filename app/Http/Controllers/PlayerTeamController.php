@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\DB;
 use App\Models\Rider;
 use App\Services\SettingManager;
 use App\Models\Trade;
+use App\Models\Auction;
 use App\Models\Race;
 use App\Models\RaceLineup;
 use App\Models\RaceResult;
@@ -50,7 +51,23 @@ class PlayerTeamController extends Controller
     public function showAuction()
     {
         $riders = Rider::whereNull('player_team_id')->with('category')->get();
-        return view('auction.show', ['riders' => $riders]);
+        $activeAuction = Auction::where('status', 'open')->first();
+
+        // Determina durata contratto in base al tipo di asta
+        $contractDuration = 0;
+        if ($activeAuction) {
+            if ($activeAuction->type === 'repair') {
+                $contractDuration = (int) SettingManager::get('contract_duration_repair', 1);
+            } else {
+                $contractDuration = (int) SettingManager::get('contract_duration_initial', 2);
+            }
+        }
+
+        return view('auction.show', [
+            'riders' => $riders,
+            'activeAuction' => $activeAuction,
+            'contractDuration' => $contractDuration,
+        ]);
     }
 
     /**
@@ -82,8 +99,15 @@ class PlayerTeamController extends Controller
             $team->balance -= $rider->initial_value;
             $team->save();
 
-            // Imposta contratto automaticamente dalle impostazioni
-            $contractYears = (int) SettingManager::get('contract_duration_initial', 2);
+            // Determina tipo di asta attiva e durata contratto
+            $activeAuction = Auction::where('status', 'open')->first();
+            $auctionType = $activeAuction ? $activeAuction->type : 'initial';
+
+            if ($auctionType === 'repair') {
+                $contractYears = (int) SettingManager::get('contract_duration_repair', 1);
+            } else {
+                $contractYears = (int) SettingManager::get('contract_duration_initial', 2);
+            }
 
             $rider->player_team_id = $team->id;
             $rider->contract_years = $contractYears;
@@ -92,7 +116,9 @@ class PlayerTeamController extends Controller
             $rider->save();
 
             DB::commit();
-            return back()->with('status', "Corridore {$rider->name} acquistato con successo! Contratto di {$contractYears} anni.");
+
+            $auctionLabel = $auctionType === 'repair' ? 'Asta Riparazione' : 'Asta Iniziale';
+            return back()->with('status', "Corridore {$rider->name} acquistato con successo! ({$auctionLabel} - Contratto di {$contractYears} anni)");
         } catch (Exception $e) {
             DB::rollBack();
             return back()->with('error', "Si è verificato un errore imprevisto durante l'acquisto. Riprova.");

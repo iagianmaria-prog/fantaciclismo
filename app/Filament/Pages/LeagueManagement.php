@@ -220,22 +220,116 @@ class LeagueManagement extends Page
     }
 
     /**
+     * Applica svalutazione annuale a tutti i corridori.
+     */
+    public function applyDevaluation(): void
+    {
+        $devaluationPercentage = (int) SettingManager::get('annual_devaluation_percentage', 20);
+
+        $riders = Rider::where('initial_value', '>', 0)->get();
+        $count = 0;
+
+        foreach ($riders as $rider) {
+            $reduction = (int) floor($rider->initial_value * $devaluationPercentage / 100);
+            $newValue = max(1, $rider->initial_value - $reduction); // Minimo 1M
+            $rider->initial_value = $newValue;
+            $rider->save();
+            $count++;
+        }
+
+        Notification::make()
+            ->title('Svalutazione applicata')
+            ->body("Applicata svalutazione del {$devaluationPercentage}% a {$count} corridori.")
+            ->success()
+            ->send();
+    }
+
+    /**
+     * Deduce gli stipendi dal budget delle squadre.
+     */
+    public function deductSalaries(): void
+    {
+        $salaryPercentage = (int) SettingManager::get('salary_percentage', 20);
+        $minSalary = (int) SettingManager::get('min_salary_amount', 1);
+
+        $teams = PlayerTeam::with('riders')->get();
+        $results = [];
+
+        foreach ($teams as $team) {
+            $totalSalary = 0;
+
+            foreach ($team->riders as $rider) {
+                $salary = max($minSalary, (int) floor($rider->initial_value * $salaryPercentage / 100));
+                $totalSalary += $salary;
+            }
+
+            $team->balance -= $totalSalary;
+            $team->save();
+
+            $results[] = "{$team->name}: -{$totalSalary}M";
+        }
+
+        Notification::make()
+            ->title('Stipendi detratti')
+            ->body("Stipendi ({$salaryPercentage}% del valore) detratti da " . count($teams) . " squadre.")
+            ->success()
+            ->send();
+    }
+
+    /**
      * Esegue tutte le operazioni di fine stagione:
-     * 1. Decrementa contratti
-     * 2. Svincola contratti scaduti
+     * 1. Deduce stipendi
+     * 2. Applica svalutazione
+     * 3. Decrementa contratti
+     * 4. Svincola contratti scaduti
+     * 5. Reset dati gare
      */
     public function endSeason(): void
     {
         DB::beginTransaction();
 
         try {
-            // 1. Decrementa tutti i contratti
+            $report = [];
+
+            // 1. Deduce stipendi dal budget delle squadre
+            $salaryPercentage = (int) SettingManager::get('salary_percentage', 20);
+            $minSalary = (int) SettingManager::get('min_salary_amount', 1);
+            $totalSalariesDeducted = 0;
+
+            $teams = PlayerTeam::with('riders')->get();
+            foreach ($teams as $team) {
+                $teamSalary = 0;
+                foreach ($team->riders as $rider) {
+                    $salary = max($minSalary, (int) floor($rider->initial_value * $salaryPercentage / 100));
+                    $teamSalary += $salary;
+                }
+                $team->balance -= $teamSalary;
+                $team->save();
+                $totalSalariesDeducted += $teamSalary;
+            }
+            $report[] = "Stipendi detratti: {$totalSalariesDeducted}M";
+
+            // 2. Applica svalutazione ai corridori
+            $devaluationPercentage = (int) SettingManager::get('annual_devaluation_percentage', 20);
+            $ridersDevalued = 0;
+
+            $allRiders = Rider::where('initial_value', '>', 1)->get();
+            foreach ($allRiders as $rider) {
+                $reduction = (int) floor($rider->initial_value * $devaluationPercentage / 100);
+                $rider->initial_value = max(1, $rider->initial_value - $reduction);
+                $rider->save();
+                $ridersDevalued++;
+            }
+            $report[] = "Svalutazione {$devaluationPercentage}% applicata a {$ridersDevalued} corridori";
+
+            // 3. Decrementa tutti i contratti
             $decremented = Rider::whereNotNull('player_team_id')
                 ->whereNotNull('contract_remaining_years')
                 ->where('contract_remaining_years', '>', 0)
                 ->decrement('contract_remaining_years');
+            $report[] = "Contratti decrementati: {$decremented}";
 
-            // 2. Svincola i corridori con contratto scaduto
+            // 4. Svincola i corridori con contratto scaduto
             $expiredRiders = Rider::whereNotNull('player_team_id')
                 ->where('contract_remaining_years', '<=', 0)
                 ->get();
@@ -249,13 +343,21 @@ class LeagueManagement extends Page
                 $rider->contract_start_date = null;
                 $rider->save();
             }
+            $report[] = "Corridori svincolati per scadenza: {$expiredCount}";
+
+            // 5. Reset dati gare (opzionale - manteniamo lo storico)
+            DB::table('race_lineup_rider')->delete();
+            RaceLineup::query()->delete();
+            Race::query()->update(['status' => 'upcoming']);
+            $report[] = "Formazioni azzerate, gare resettate";
 
             DB::commit();
 
             Notification::make()
                 ->title('Fine Stagione Completata')
-                ->body("Contratti decrementati: {$decremented}. Corridori svincolati per scadenza: {$expiredCount}.")
+                ->body(implode("\n", $report))
                 ->success()
+                ->duration(10000)
                 ->send();
 
         } catch (\Exception $e) {

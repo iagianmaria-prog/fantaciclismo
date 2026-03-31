@@ -73,30 +73,71 @@
             </div>
         </x-filament::section>
 
-        {{-- Gestione Contratti --}}
+        {{-- Gestione Contratti e Fine Stagione --}}
         <x-filament::section>
             <x-slot name="heading">
                 Gestione Contratti e Fine Stagione
             </x-slot>
 
+            {{-- Pulsante principale Fine Stagione --}}
+            <div class="mb-6 border-2 border-blue-300 dark:border-blue-700 rounded-lg p-6 bg-blue-50 dark:bg-blue-900/20">
+                <h3 class="font-bold text-lg mb-2 text-blue-800 dark:text-blue-300">🏁 Fine Stagione Completa</h3>
+                <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                    Esegue tutte le operazioni di fine stagione in ordine:
+                </p>
+                <ol class="text-sm text-gray-600 dark:text-gray-400 mb-4 list-decimal list-inside space-y-1">
+                    <li><strong>Deduce stipendi</strong> dal budget delle squadre ({{ \App\Services\SettingManager::get('salary_percentage', 20) }}% del valore corridori)</li>
+                    <li><strong>Applica svalutazione</strong> ai corridori ({{ \App\Services\SettingManager::get('annual_devaluation_percentage', 20) }}% del valore)</li>
+                    <li><strong>Decrementa contratti</strong> di 1 anno</li>
+                    <li><strong>Svincola corridori</strong> con contratto scaduto</li>
+                    <li><strong>Resetta formazioni</strong> delle gare</li>
+                </ol>
+                <x-filament::button
+                    wire:click="endSeason"
+                    wire:confirm="ATTENZIONE: Questa azione eseguirà TUTTE le operazioni di fine stagione (stipendi, svalutazione, contratti, svincoli). Sei sicuro?"
+                    color="primary"
+                    icon="heroicon-o-calendar"
+                    size="lg"
+                >
+                    Esegui Fine Stagione Completa
+                </x-filament::button>
+            </div>
+
+            <h4 class="font-semibold text-gray-700 dark:text-gray-300 mb-4">Operazioni Singole</h4>
+
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div class="border border-blue-200 dark:border-blue-700 rounded-lg p-4 bg-blue-50/50 dark:bg-blue-900/10">
-                    <h3 class="font-semibold mb-2 text-blue-700 dark:text-blue-400">Fine Stagione</h3>
+                <div class="border rounded-lg p-4 dark:border-gray-700">
+                    <h3 class="font-semibold mb-2">💰 Deduce Stipendi</h3>
                     <p class="text-sm text-gray-500 mb-3">
-                        Esegue tutte le operazioni di fine stagione: decrementa di 1 anno tutti i contratti e svincola automaticamente i corridori con contratto scaduto.
+                        Deduce gli stipendi ({{ \App\Services\SettingManager::get('salary_percentage', 20) }}% del valore corridori) dal budget di ogni squadra.
                     </p>
                     <x-filament::button
-                        wire:click="endSeason"
-                        wire:confirm="Sei sicuro di voler eseguire la procedura di fine stagione? I contratti verranno decrementati e i corridori con contratto scaduto saranno svincolati."
-                        color="primary"
-                        icon="heroicon-o-calendar"
+                        wire:click="deductSalaries"
+                        wire:confirm="Sei sicuro di voler detrarre gli stipendi da tutte le squadre?"
+                        color="warning"
+                        icon="heroicon-o-banknotes"
                     >
-                        Esegui Fine Stagione
+                        Deduce Stipendi
                     </x-filament::button>
                 </div>
 
                 <div class="border rounded-lg p-4 dark:border-gray-700">
-                    <h3 class="font-semibold mb-2">Decrementa Contratti</h3>
+                    <h3 class="font-semibold mb-2">📉 Applica Svalutazione</h3>
+                    <p class="text-sm text-gray-500 mb-3">
+                        Riduce il valore di tutti i corridori del {{ \App\Services\SettingManager::get('annual_devaluation_percentage', 20) }}%.
+                    </p>
+                    <x-filament::button
+                        wire:click="applyDevaluation"
+                        wire:confirm="Sei sicuro di voler applicare la svalutazione a tutti i corridori?"
+                        color="warning"
+                        icon="heroicon-o-arrow-trending-down"
+                    >
+                        Applica Svalutazione
+                    </x-filament::button>
+                </div>
+
+                <div class="border rounded-lg p-4 dark:border-gray-700">
+                    <h3 class="font-semibold mb-2">📅 Decrementa Contratti</h3>
                     <p class="text-sm text-gray-500 mb-3">
                         Decrementa di 1 anno tutti i contratti attivi. Non svincola automaticamente i corridori.
                     </p>
@@ -111,7 +152,7 @@
                 </div>
 
                 <div class="border rounded-lg p-4 dark:border-gray-700">
-                    <h3 class="font-semibold mb-2">Svincola Contratti Scaduti</h3>
+                    <h3 class="font-semibold mb-2">🚪 Svincola Contratti Scaduti</h3>
                     <p class="text-sm text-gray-500 mb-3">
                         Svincola solo i corridori con contratto scaduto (0 anni rimanenti).
                     </p>
