@@ -15,6 +15,8 @@ class Rider extends Model
         'name',
         'rider_category_id',
         'initial_value',
+        'current_value',
+        'purchase_price',
         'player_team_id',
         'real_team',
         'contract_years',
@@ -25,6 +27,15 @@ class Rider extends Model
     protected $casts = [
         'contract_start_date' => 'date',
     ];
+
+    /**
+     * Ritorna il valore effettivo del corridore.
+     * Se current_value è impostato, usa quello, altrimenti initial_value.
+     */
+    public function getEffectiveValueAttribute(): int
+    {
+        return $this->current_value ?? $this->initial_value;
+    }
 
     public function category(): BelongsTo
     {

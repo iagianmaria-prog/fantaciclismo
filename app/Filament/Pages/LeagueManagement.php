@@ -221,20 +221,26 @@ class LeagueManagement extends Page
 
     /**
      * Applica svalutazione annuale a tutti i corridori.
+     * Usa current_value se impostato, altrimenti initial_value.
      */
     public function applyDevaluation(): void
     {
         $devaluationPercentage = (int) SettingManager::get('annual_devaluation_percentage', 20);
 
-        $riders = Rider::where('initial_value', '>', 0)->get();
+        $riders = Rider::all();
         $count = 0;
 
         foreach ($riders as $rider) {
-            $reduction = (int) floor($rider->initial_value * $devaluationPercentage / 100);
-            $newValue = max(1, $rider->initial_value - $reduction); // Minimo 1M
-            $rider->initial_value = $newValue;
-            $rider->save();
-            $count++;
+            // Usa il valore corrente o quello iniziale
+            $currentValue = $rider->current_value ?? $rider->initial_value;
+
+            if ($currentValue > 1) {
+                $reduction = (int) floor($currentValue * $devaluationPercentage / 100);
+                $newValue = max(1, $currentValue - $reduction); // Minimo 1M
+                $rider->current_value = $newValue;
+                $rider->save();
+                $count++;
+            }
         }
 
         Notification::make()
@@ -291,7 +297,7 @@ class LeagueManagement extends Page
         try {
             $report = [];
 
-            // 1. Deduce stipendi dal budget delle squadre
+            // 1. Deduce stipendi dal budget delle squadre (basati sul valore corrente)
             $salaryPercentage = (int) SettingManager::get('salary_percentage', 20);
             $minSalary = (int) SettingManager::get('min_salary_amount', 1);
             $totalSalariesDeducted = 0;
@@ -300,7 +306,8 @@ class LeagueManagement extends Page
             foreach ($teams as $team) {
                 $teamSalary = 0;
                 foreach ($team->riders as $rider) {
-                    $salary = max($minSalary, (int) floor($rider->initial_value * $salaryPercentage / 100));
+                    $riderValue = $rider->current_value ?? $rider->initial_value;
+                    $salary = max($minSalary, (int) floor($riderValue * $salaryPercentage / 100));
                     $teamSalary += $salary;
                 }
                 $team->balance -= $teamSalary;
@@ -309,16 +316,19 @@ class LeagueManagement extends Page
             }
             $report[] = "Stipendi detratti: {$totalSalariesDeducted}M";
 
-            // 2. Applica svalutazione ai corridori
+            // 2. Applica svalutazione ai corridori (su current_value)
             $devaluationPercentage = (int) SettingManager::get('annual_devaluation_percentage', 20);
             $ridersDevalued = 0;
 
-            $allRiders = Rider::where('initial_value', '>', 1)->get();
+            $allRiders = Rider::all();
             foreach ($allRiders as $rider) {
-                $reduction = (int) floor($rider->initial_value * $devaluationPercentage / 100);
-                $rider->initial_value = max(1, $rider->initial_value - $reduction);
-                $rider->save();
-                $ridersDevalued++;
+                $currentValue = $rider->current_value ?? $rider->initial_value;
+                if ($currentValue > 1) {
+                    $reduction = (int) floor($currentValue * $devaluationPercentage / 100);
+                    $rider->current_value = max(1, $currentValue - $reduction);
+                    $rider->save();
+                    $ridersDevalued++;
+                }
             }
             $report[] = "Svalutazione {$devaluationPercentage}% applicata a {$ridersDevalued} corridori";
 

@@ -29,17 +29,36 @@ class RiderResource extends Resource
                         Forms\Components\TextInput::make('real_team')
                             ->label('Team Reale')
                             ->maxLength(255),
-                        Forms\Components\TextInput::make('initial_value')
-                            ->label('Valore Iniziale')
-                            ->required()
-                            ->numeric()
-                            ->suffix('M')
-                            ->default(0),
                         Forms\Components\Select::make('rider_category_id')
                             ->label('Categoria')
                             ->relationship('category', 'name')
                             ->required(),
-                    ])->columns(2),
+                    ])->columns(3),
+
+                Forms\Components\Section::make('Valori')
+                    ->schema([
+                        Forms\Components\TextInput::make('initial_value')
+                            ->label('Valore Base (originale)')
+                            ->required()
+                            ->numeric()
+                            ->suffix('M')
+                            ->default(0)
+                            ->helperText('Valore di partenza del corridore'),
+                        Forms\Components\TextInput::make('current_value')
+                            ->label('Valore Corrente')
+                            ->numeric()
+                            ->suffix('M')
+                            ->helperText('Valore attuale modificabile. Se vuoto, usa il valore base.')
+                            ->placeholder(fn ($record) => $record?->initial_value ?? 'Stesso del base'),
+                        Forms\Components\TextInput::make('purchase_price')
+                            ->label('Prezzo Acquisto')
+                            ->numeric()
+                            ->suffix('M')
+                            ->helperText('Prezzo pagato dalla squadra all\'asta')
+                            ->disabled()
+                            ->dehydrated(false)
+                            ->visible(fn ($record) => $record?->player_team_id !== null),
+                    ])->columns(3),
 
                 Forms\Components\Section::make('Contratto')
                     ->schema([
@@ -77,9 +96,21 @@ class RiderResource extends Resource
                     ->label('Categoria')
                     ->sortable(),
                 Tables\Columns\TextColumn::make('initial_value')
+                    ->label('V.Base')
+                    ->suffix('M')
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: true),
+                Tables\Columns\TextColumn::make('current_value')
                     ->label('Valore')
                     ->suffix('M')
-                    ->sortable(),
+                    ->sortable()
+                    ->default(fn ($record) => $record->initial_value)
+                    ->formatStateUsing(fn ($state, $record) => $state ?? $record->initial_value)
+                    ->color(fn ($state, $record) =>
+                        $state && $state != $record->initial_value
+                            ? ($state > $record->initial_value ? 'success' : 'danger')
+                            : null
+                    ),
                 Tables\Columns\TextColumn::make('contract_years')
                     ->label('Contratto')
                     ->suffix(' anni')

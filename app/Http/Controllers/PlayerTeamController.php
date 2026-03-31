@@ -82,8 +82,12 @@ class PlayerTeamController extends Controller
             if ($rider->player_team_id !== null) {
                 return back()->with('error', 'Questo corridore è già stato acquistato!');
             }
-            if ($team->balance < $rider->initial_value) {
-                return back()->with('error', 'Budget non sufficiente per acquistare questo corridore!');
+
+            // Usa il valore corrente (se impostato) o il valore base
+            $purchasePrice = $rider->current_value ?? $rider->initial_value;
+
+            if ($team->balance < $purchasePrice) {
+                return back()->with('error', "Budget non sufficiente! Costo: {$purchasePrice}M, Budget: {$team->balance}M");
             }
 
             $categoryKey = 'max_' . strtolower($rider->category->name);
@@ -96,7 +100,7 @@ class PlayerTeamController extends Controller
                 }
             }
 
-            $team->balance -= $rider->initial_value;
+            $team->balance -= $purchasePrice;
             $team->save();
 
             // Determina tipo di asta attiva e durata contratto
@@ -110,6 +114,7 @@ class PlayerTeamController extends Controller
             }
 
             $rider->player_team_id = $team->id;
+            $rider->purchase_price = $purchasePrice;
             $rider->contract_years = $contractYears;
             $rider->contract_remaining_years = $contractYears;
             $rider->contract_start_date = now();

@@ -47,7 +47,15 @@
                                     <tr>
                                         <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{{ $rider->name }}</td>
                                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ $rider->category->name ?? 'N/A' }}</td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ $rider->initial_value }}M</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm">
+                                            @php
+                                                $effectiveValue = $rider->current_value ?? $rider->initial_value;
+                                            @endphp
+                                            <span class="text-gray-700 font-medium">{{ $effectiveValue }}M</span>
+                                            @if($rider->purchase_price && $rider->purchase_price != $effectiveValue)
+                                                <span class="text-xs text-gray-400 ml-1">(pagato: {{ $rider->purchase_price }}M)</span>
+                                            @endif
+                                        </td>
                                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                                             @if($rider->contract_years)
                                                 {{ $rider->contract_years }} anni

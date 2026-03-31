@@ -85,8 +85,17 @@
                                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                                             {{ $rider->category->name ?? 'N/A' }}
                                         </td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                            {{ $rider->initial_value }}M
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm">
+                                            @php
+                                                $effectiveValue = $rider->current_value ?? $rider->initial_value;
+                                                $hasCustomValue = $rider->current_value && $rider->current_value != $rider->initial_value;
+                                            @endphp
+                                            <span class="{{ $hasCustomValue ? 'font-bold text-blue-600' : 'text-gray-500' }}">
+                                                {{ $effectiveValue }}M
+                                            </span>
+                                            @if($hasCustomValue)
+                                                <span class="text-xs text-gray-400 line-through ml-1">{{ $rider->initial_value }}M</span>
+                                            @endif
                                         </td>
                                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                                             @if($rider->contract_years)
