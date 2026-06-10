@@ -51,7 +51,7 @@ class PlayerTeamController extends Controller
     public function showAuction()
     {
         $riders = Rider::whereNull('player_team_id')->with('category')->get();
-        $activeAuction = Auction::where('status', 'open')->first();
+        $activeAuction = Auction::active();
 
         // Determina durata contratto in base al tipo di asta
         $contractDuration = 0;
@@ -114,7 +114,7 @@ class PlayerTeamController extends Controller
             $team->save();
 
             // Determina tipo di asta attiva e durata contratto
-            $activeAuction = Auction::where('status', 'open')->first();
+            $activeAuction = Auction::active();
             $auctionType = $activeAuction ? $activeAuction->type : 'initial';
 
             if ($auctionType === 'repair') {
@@ -522,21 +522,31 @@ class PlayerTeamController extends Controller
     {
         $myTeam = Auth::user()->playerTeam;
 
-        // Recupera tutte le squadre con i crediti totali guadagnati dalle gare
-        $teams = PlayerTeam::with('user')->get()->map(function ($team) {
-            // Calcola crediti totali dalle gare
-            $totalCredits = 0;
-            $racesParticipated = 0;
-            $raceDetails = [];
+        // Tutte le formazioni delle gare completate, raggruppate per squadra
+        $lineups = RaceLineup::with('race')
+            ->whereHas('race', fn ($q) => $q->where('status', 'completed'))
+            ->get()
+            ->groupBy('player_team_id');
 
-            $lineups = RaceLineup::where('player_team_id', $team->id)
-                ->with(['race', 'riders'])
-                ->get();
+        // Crediti per formazione calcolati con un'unica query aggregata
+        $creditsByLineup = DB::table('race_lineup_rider')
+            ->join('race_lineups', 'race_lineups.id', '=', 'race_lineup_rider.race_lineup_id')
+            ->join('race_results', function ($join) {
+                $join->on('race_results.race_id', '=', 'race_lineups.race_id')
+                     ->on('race_results.rider_id', '=', 'race_lineup_rider.rider_id');
+            })
+            ->groupBy('race_lineup_rider.race_lineup_id')
+            ->select('race_lineup_rider.race_lineup_id', DB::raw('SUM(race_results.credits_earned) as credits'))
+            ->pluck('credits', 'race_lineup_id');
 
-            foreach ($lineups as $lineup) {
-                if ($lineup->race && $lineup->race->status === 'completed') {
-                    $racesParticipated++;
-                    $raceCredits = $lineup->calculateCreditsEarned();
+        $teams = PlayerTeam::with('user')->withCount('riders')->get()
+            ->map(function ($team) use ($lineups, $creditsByLineup) {
+                $teamLineups = $lineups->get($team->id, collect());
+
+                $raceDetails = [];
+                $totalCredits = 0;
+                foreach ($teamLineups as $lineup) {
+                    $raceCredits = (int) ($creditsByLineup[$lineup->id] ?? 0);
                     $totalCredits += $raceCredits;
 
                     $raceDetails[] = [
@@ -544,18 +554,17 @@ class PlayerTeamController extends Controller
                         'credits' => $raceCredits,
                     ];
                 }
-            }
 
-            return [
-                'team' => $team,
-                'total_credits' => $totalCredits,
-                'races_participated' => $racesParticipated,
-                'race_details' => $raceDetails,
-                'riders_count' => $team->riders()->count(),
-            ];
-        })
-        ->sortByDesc('total_credits')
-        ->values();
+                return [
+                    'team' => $team,
+                    'total_credits' => $totalCredits,
+                    'races_participated' => $teamLineups->count(),
+                    'race_details' => $raceDetails,
+                    'riders_count' => $team->riders_count,
+                ];
+            })
+            ->sortByDesc('total_credits')
+            ->values();
 
         // Trova la posizione della mia squadra
         $myPosition = $teams->search(function ($item) use ($myTeam) {

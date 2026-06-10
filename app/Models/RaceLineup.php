@@ -51,21 +51,11 @@ class RaceLineup extends Model
         return $this->riders()->where('rider_id', $rider->id)->exists();
     }
 
-    // Calcola crediti totali guadagnati dalla formazione
+    // Calcola crediti totali guadagnati dalla formazione (una sola query aggregata)
     public function calculateCreditsEarned(): int
     {
-        $totalCredits = 0;
-
-        foreach ($this->riders as $rider) {
-            $result = RaceResult::where('race_id', $this->race_id)
-                                ->where('rider_id', $rider->id)
-                                ->first();
-
-            if ($result) {
-                $totalCredits += $result->credits_earned;
-            }
-        }
-
-        return $totalCredits;
+        return (int) RaceResult::where('race_id', $this->race_id)
+            ->whereIn('rider_id', $this->riders()->select('riders.id'))
+            ->sum('credits_earned');
     }
 }
