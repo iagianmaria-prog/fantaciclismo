@@ -75,11 +75,19 @@ class PlayerTeamController extends Controller
      */
     public function buyRider(Rider $rider)
     {
+        $authTeam = Auth::user()->playerTeam;
+        if (!$authTeam) {
+            return redirect()->route('player-team.create')->with('error', 'Devi prima creare una squadra.');
+        }
+
         DB::beginTransaction();
         try {
-            $team = Auth::user()->playerTeam;
+            // Lock pessimistico: impedisce a due richieste parallele di acquistare lo stesso corridore
+            $rider = Rider::lockForUpdate()->findOrFail($rider->id);
+            $team = PlayerTeam::lockForUpdate()->findOrFail($authTeam->id);
 
             if ($rider->player_team_id !== null) {
+                DB::rollBack();
                 return back()->with('error', 'Questo corridore è già stato acquistato!');
             }
 
@@ -87,6 +95,7 @@ class PlayerTeamController extends Controller
             $purchasePrice = $rider->current_value ?? $rider->initial_value;
 
             if ($team->balance < $purchasePrice) {
+                DB::rollBack();
                 return back()->with('error', "Budget non sufficiente! Costo: {$purchasePrice}M, Budget: {$team->balance}M");
             }
 
@@ -96,6 +105,7 @@ class PlayerTeamController extends Controller
             if ($maxForCategory !== null) {
                 $currentCountForCategory = $team->riders()->where('rider_category_id', $rider->rider_category_id)->count();
                 if ($currentCountForCategory >= $maxForCategory) {
+                    DB::rollBack();
                     return back()->with('error', "Hai già raggiunto il numero massimo di corridori per la categoria {$rider->category->name}!");
                 }
             }
@@ -135,11 +145,19 @@ class PlayerTeamController extends Controller
      */
     public function releaseRider(Rider $rider)
     {
+        $authTeam = Auth::user()->playerTeam;
+        if (!$authTeam) {
+            return redirect()->route('player-team.create')->with('error', 'Devi prima creare una squadra.');
+        }
+
         DB::beginTransaction();
         try {
-            $team = Auth::user()->playerTeam;
+            // Lock pessimistico: impedisce il doppio svincolo (e doppio recupero crediti)
+            $rider = Rider::lockForUpdate()->findOrFail($rider->id);
+            $team = PlayerTeam::lockForUpdate()->findOrFail($authTeam->id);
 
             if ($rider->player_team_id !== $team->id) {
+                DB::rollBack();
                 return back()->with('error', 'Non puoi svincolare un corridore che non ti appartiene.');
             }
 
@@ -196,33 +214,45 @@ class PlayerTeamController extends Controller
      */
     public function acceptTrade(Trade $trade)
     {
+        $authTeam = Auth::user()->playerTeam;
+        if (!$authTeam) {
+            return redirect()->route('player-team.create')->with('error', 'Devi prima creare una squadra.');
+        }
+
+        if ($trade->receiving_team_id !== $authTeam->id) {
+            return back()->with('error', 'Non puoi accettare uno scambio non indirizzato a te.');
+        }
+
         DB::beginTransaction();
         try {
-            $receivingTeam = Auth::user()->playerTeam;
-
-            if ($trade->receiving_team_id !== $receivingTeam->id) {
-                return back()->with('error', 'Non puoi accettare uno scambio non indirizzato a te.');
-            }
+            // Lock pessimistico su trade e squadre: impedisce doppia accettazione
+            // e modifiche concorrenti ai budget
+            $trade = Trade::lockForUpdate()->findOrFail($trade->id);
+            $receivingTeam = PlayerTeam::lockForUpdate()->findOrFail($trade->receiving_team_id);
+            $offeringTeam = PlayerTeam::lockForUpdate()->findOrFail($trade->offering_team_id);
 
             if ($trade->status !== 'pending') {
+                DB::rollBack();
                 return back()->with('error', 'Questo scambio non è più disponibile.');
             }
 
-            $offeredRiders = $trade->riders()->wherePivot('direction', 'offering')->get();
+            // Lock sui corridori coinvolti: impedisce che vengano venduti/scambiati
+            // mentre questo scambio viene accettato
+            $offeredRiders = $trade->riders()->wherePivot('direction', 'offering')->lockForUpdate()->get();
             foreach ($offeredRiders as $rider) {
                 if ($rider->player_team_id !== $trade->offering_team_id) {
+                    DB::rollBack();
                     return back()->with('error', "Il corridore {$rider->name} non è più disponibile per lo scambio.");
                 }
             }
 
-            $requestedRiders = $trade->riders()->wherePivot('direction', 'receiving')->get();
+            $requestedRiders = $trade->riders()->wherePivot('direction', 'receiving')->lockForUpdate()->get();
             foreach ($requestedRiders as $rider) {
                 if ($rider->player_team_id !== $trade->receiving_team_id) {
+                    DB::rollBack();
                     return back()->with('error', "Il corridore {$rider->name} non è più nel tuo roster.");
                 }
             }
-
-            $offeringTeam = $trade->offeringTeam;
 
             // Validazione limiti categoria per SQUADRA CHE ACCETTA (receiving)
             // Calcola il bilancio netto per ogni categoria
@@ -248,6 +278,7 @@ class PlayerTeamController extends Controller
                             ->count();
 
                         if (($currentCount + $netChange) > $maxForCategory) {
+                            DB::rollBack();
                             return back()->with('error', "Accettando supereresti il limite massimo ({$maxForCategory}) per la categoria {$rider->category->name}! Avresti " . ($currentCount + $netChange) . " corridori.");
                         }
                     }
@@ -277,6 +308,7 @@ class PlayerTeamController extends Controller
                             ->count();
 
                         if (($currentCount + $netChange) > $maxForCategory) {
+                            DB::rollBack();
                             return back()->with('error', "Lo scambio farebbe superare alla squadra proponente il limite massimo ({$maxForCategory}) per la categoria {$rider->category->name}!");
                         }
                     }

@@ -46,6 +46,12 @@ class CreateTradeForm extends Component
         $moneyOffer = $this->moneyOffer ?? 0;
         $moneyRequest = $this->moneyRequest ?? 0;
 
+        // I crediti non possono essere negativi (un valore negativo invertirebbe chi paga)
+        if ($moneyOffer < 0 || $moneyRequest < 0) {
+            session()->flash('error', 'I crediti non possono essere negativi.');
+            return;
+        }
+
         // Non puoi compilare entrambi
         if ($moneyOffer > 0 && $moneyRequest > 0) {
             session()->flash('error', 'Non puoi sia offrire che chiedere crediti. Compila solo uno dei due campi.');
@@ -68,10 +74,28 @@ class CreateTradeForm extends Component
             return;
         }
 
+        $myTeam = Auth::user()->playerTeam;
+
+        // Validazione: i corridori offerti devono appartenere alla mia squadra
+        if (!empty($this->offeredRiderIds)) {
+            $myRiderIds = $myTeam->riders()->pluck('id')->all();
+            if (array_diff($this->offeredRiderIds, $myRiderIds)) {
+                session()->flash('error', 'Puoi offrire solo corridori della tua squadra.');
+                return;
+            }
+        }
+
+        // Validazione: i corridori richiesti devono appartenere alla squadra selezionata
+        if (!empty($this->requestedRiderIds)) {
+            $theirRiderIds = PlayerTeam::find($this->selectedTeamId)->riders()->pluck('id')->all();
+            if (array_diff($this->requestedRiderIds, $theirRiderIds)) {
+                session()->flash('error', 'Puoi richiedere solo corridori della squadra selezionata.');
+                return;
+            }
+        }
+
         // Validazione: verifica che l'utente abbia abbastanza budget se deve pagare
         if ($moneyOffer > 0) {
-            $myTeam = Auth::user()->playerTeam;
-
             if ($myTeam->balance < $moneyOffer) {
                 session()->flash('error', "Non hai abbastanza budget! Il tuo saldo è {$myTeam->balance}M, ma vuoi offrire {$moneyOffer}M.");
                 return;
