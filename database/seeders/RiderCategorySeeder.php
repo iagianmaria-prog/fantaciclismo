@@ -20,10 +20,14 @@ class RiderCategorySeeder extends Seeder
             ['name' => 'Altro', 'description' => 'Corridori con altre specialità'],
         ];
 
-        // Svuota la tabella prima di inserirli per evitare duplicati
-        DB::table('rider_categories')->truncate();
-        
-        // Inserisce le categorie nel database
-        DB::table('rider_categories')->insert($categories);
+        // Inserisce le categorie solo se non esistono già (firstOrCreate):
+        // TRUNCATE fallirebbe su MySQL/Postgres quando la tabella è
+        // referenziata dai corridori, e cancellerebbe dati in produzione.
+        foreach ($categories as $category) {
+            DB::table('rider_categories')->updateOrInsert(
+                ['name' => $category['name']],
+                $category
+            );
+        }
     }
 }

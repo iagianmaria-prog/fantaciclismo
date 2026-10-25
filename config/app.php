@@ -17,6 +17,19 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Amministratore della Lega
+    |--------------------------------------------------------------------------
+    |
+    | Email e password dell'utente admin. In produzione impostare le
+    | variabili d'ambiente ADMIN_EMAIL e ADMIN_PASSWORD con valori sicuri.
+    |
+    */
+
+    'admin_email' => env('ADMIN_EMAIL', 'admin@test.com'),
+    'admin_password' => env('ADMIN_PASSWORD', 'password'),
+
+    /*
+    |--------------------------------------------------------------------------
     | Application Environment
     |--------------------------------------------------------------------------
     |

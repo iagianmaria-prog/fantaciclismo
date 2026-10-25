@@ -60,8 +60,7 @@ class User extends Authenticatable implements FilamentUser
      */
     public function canAccessPanel(Panel $panel): bool
     {
-        // Assicurati che questa sia l'email esatta del tuo utente admin.
-        // Mettila tra apici singoli.
-        return $this->email === 'admin@test.com';
+        // L'email dell'admin è configurabile via ADMIN_EMAIL nel file .env
+        return $this->email === config('app.admin_email');
     }
 }

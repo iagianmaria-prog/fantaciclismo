@@ -14,13 +14,17 @@ class AdminUserSeeder extends Seeder
      */
     public function run(): void
     {
+        // Email e password configurabili via ADMIN_EMAIL / ADMIN_PASSWORD nel .env
+        $email = config('app.admin_email');
+        $password = config('app.admin_password');
+
         // Controlla se l'utente admin esiste già per evitare duplicati
-        if (!User::where('email', 'admin@test.com')->exists()) {
-            
+        if (!User::where('email', $email)->exists()) {
+
             User::create([
                 'name' => 'Admin',
-                'email' => 'admin@test.com',
-                'password' => Hash::make('password'), // Imposta la password a 'password'
+                'email' => $email,
+                'password' => Hash::make($password),
             ]);
 
         }
