@@ -20,6 +20,12 @@ public function up(): void
         $table->integer('balance'); // Saldo in fantamilioni
         $table->timestamps();
     });
+
+    // Aggiunge il vincolo rimandato dalla migration create_riders_table
+    // (riders viene creata prima di player_teams)
+    Schema::table('riders', function (Blueprint $table) {
+        $table->foreign('player_team_id')->references('id')->on('player_teams');
+    });
 }
 
 
@@ -28,6 +34,10 @@ public function up(): void
      */
     public function down(): void
     {
+        Schema::table('riders', function (Blueprint $table) {
+            $table->dropForeign(['player_team_id']);
+        });
+
         Schema::dropIfExists('player_teams');
     }
 };

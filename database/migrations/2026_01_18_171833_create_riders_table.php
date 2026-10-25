@@ -22,7 +22,10 @@ return new class extends Migration
 
             $table->foreignId('rider_category_id')->constrained('rider_categories');
             
-            $table->foreignId('player_team_id')->nullable()->constrained('player_teams');
+            // Il vincolo verso player_teams viene aggiunto nella migration
+            // create_player_teams_table: quella tabella non esiste ancora qui
+            // e MySQL rifiuta foreign key verso tabelle inesistenti.
+            $table->foreignId('player_team_id')->nullable();
 
             $table->timestamps();
         });
