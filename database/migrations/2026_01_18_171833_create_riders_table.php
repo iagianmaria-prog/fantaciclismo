@@ -11,6 +11,13 @@ return new class extends Migration
      */
     public function up(): void
     {
+        // Tollerante a un deploy precedente interrotto: se la tabella esiste
+        // già (creata prima che il vincolo verso player_teams fallisse su
+        // MySQL), non va ricreata.
+        if (Schema::hasTable('riders')) {
+            return;
+        }
+
         Schema::create('riders', function (Blueprint $table) {
             $table->id();
             $table->string('name');
